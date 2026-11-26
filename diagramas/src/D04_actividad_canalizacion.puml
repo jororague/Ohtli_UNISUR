@@ -1,0 +1,80 @@
+@startuml D04_actividad_canalizacion
+' OHTLI · P3 · D04 Diagrama de actividad con carriles: ciclo de una canalización
+' Fuente: P2 V4, RF-05 a RF-12, Tabla VI, RN-03 a RN-09, SUP-02 y SUP-03
+' Muestra el flujo del incremento mínimo; los pasos del segundo incremento se marcan.
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam activity {
+  BackgroundColor #DDEBF7
+  BorderColor #2F5597
+}
+
+|Tutor|
+start
+:Detectar situación del tutorado\n(inasistencia, bajo rendimiento,\nconducta o solicitud);
+:Informar al estudiante\n(se registra si fue informado, RN-09);
+:Capturar canalización\n(tutorado, motivo, instancia de destino,\nprioridad, informado, descripción ≤ 500);
+
+|Sistema|
+if (¿Datos válidos y tutorado del tutor?\n(RN-03, RNF-04)) then (no)
+  :Rechazar y mostrar el campo faltante;
+  |Tutor|
+  :Corregir captura;
+  detach
+else (sí)
+  :Asignar folio CAN-AAAA-NNNN;
+  :Estado = Registrada\nregistrar CambioEstado y Bitácora;
+endif
+
+|Área de apoyo|
+:Consultar bandeja\n(solo canalizaciones de su instancia, RF-07);
+:Marcar Recibida y programar cita;
+
+|Sistema|
+:Registrar CambioEstado y Bitácora\nnotificar al tutor (RF-09, 2.º incremento);
+
+|Área de apoyo|
+repeat
+  if (¿El estudiante asistió?) then (no)
+    :Registrar No asistió;
+    |Tutor|
+    if (¿Se programa nueva cita?) then (no)
+      :Cerrar con motivo (RN-04);
+      |Sistema|
+      :Estado = Cerrada\nregistrar CambioEstado y Bitácora;
+      stop
+    else (sí)
+      |Área de apoyo|
+      :Programar nueva cita\n(estado = Recibida);
+    endif
+  else (sí)
+    :Registrar En atención;
+    break
+  endif
+repeat while (¿Cita pendiente?) is (sí)
+
+|Área de apoyo|
+:Registrar atención y resultado general\n(sin diagnóstico, RNF-04);
+
+|Sistema|
+:Estado = Atendida\nregistrar CambioEstado y Bitácora;
+:Devolver al tutor solo el estado\n(SUP-04, RN-05);
+
+|Tutor|
+:Revisar resultado y cerrar (SUP-03);
+
+|Sistema|
+:Estado = Cerrada\nregistrar CambioEstado y Bitácora;
+
+|Coordinación de tutoría|
+:Consultar estado, tiempos e indicadores\nsin descripción ni número de control\n(RF-12, RN-05, 3.er incremento);
+stop
+
+floating note right
+  Paralelo al flujo (RF-10, RN-07, 2.º incremento):
+  si una canalización permanece en Registrada
+  o Recibida más de N = 5 días hábiles, el
+  sistema genera una Alerta a la coordinación.
+end note
+@enduml

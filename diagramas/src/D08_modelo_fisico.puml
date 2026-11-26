@@ -1,0 +1,388 @@
+@startuml D08_modelo_fisico
+' OHTLI · P3 · D08 Modelo físico de datos en PostgreSQL
+' Fuente: P2 V4, Anexo D (diccionario de datos), D02, D03 (Tabla VI), RF-01 a RF-15, RN-01 a RN-09, RNF-01 a RNF-04
+' Modelo diseñado para la construcción futura (ADR-01 a ADR-05); no está desplegado.
+' Notación: * = NOT NULL; PK = llave primaria; FK = llave foránea; UQ = única.
+' Clasificación del dato (Anexo D): «I» identificativo, «II» identificativo indirecto, «S» sensible;
+' sin marca = no personal. Cada columna clasificada lleva además COMMENT ON COLUMN con su clase.
+' {P3} = refinamiento frente al Anexo D, registrado en el control de cambios de P3.
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam classAttributeIconSize 0
+skinparam linetype polyline
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #2F5597
+  HeaderBackgroundColor #DDEBF7
+  BackgroundColor<<Segundo>> #FFFDF3
+  BorderColor<<Segundo>> #BF9000
+}
+skinparam package {
+  BorderColor #595959
+}
+hide circle
+hide empty methods
+
+package "Tipos enumerados (CREATE TYPE … AS ENUM)" {
+  enum rol_usuario {
+    tutor
+    jefatura_carrera
+    coord_tutoria
+    apoyo
+    admin
+  }
+  enum estado_canalizacion {
+    Registrada
+    Recibida
+    En atención
+    No asistió
+    Atendida
+    Escalada
+    Cerrada
+  }
+  enum eje_nota {
+    academico
+    personal
+    profesional
+  }
+  enum tipo_sesion {
+    grupal
+    individual
+  }
+  enum prioridad_canalizacion {
+    normal
+    prioritaria
+  }
+}
+
+package "Catálogos y configuración (RF-14)" {
+  entity carrera {
+    * clave : varchar(10) <<PK>>
+    --
+    * nombre : varchar(80)
+  }
+  entity ciclo {
+    * clave : varchar(10) <<PK>>
+    --
+    * fecha_inicio : date
+    * fecha_fin : date
+    ..
+    {field} CHECK fecha_fin > fecha_inicio
+  }
+  entity instancia_apoyo {
+    * id_instancia : integer <<PK, identity>>
+    --
+    * nombre : varchar(80) <<UQ>>
+    * tipo : varchar(10)
+    * activa : boolean = true
+    ..
+    {field} CHECK tipo IN ('interna', 'externa')
+  }
+  entity motivo_deteccion {
+    * clave : varchar(30) <<PK>>
+    --
+    * nombre : varchar(60)
+    * activo : boolean = true
+  }
+  entity dia_inhabil {
+    * fecha : date <<PK>>
+    --
+    * descripcion : varchar(80)
+  }
+  entity parametro {
+    * clave : varchar(30) <<PK>>
+    --
+    * valor : varchar(60)
+    * descripcion : varchar(200)
+  }
+}
+
+package "Usuarios y grupos" {
+  entity usuario {
+    * id_usuario : integer <<PK, identity>>  «II»
+    --
+    * nombre : varchar(120)  «I»
+    * correo : varchar(120) <<UQ>>  «I»
+    * hash_contrasena : varchar(255)  «S»
+    * rol : rol_usuario
+    id_instancia : integer <<FK>> {P3}
+    clave_carrera : varchar(10) <<FK>> {P3}
+    * activo : boolean = true
+    ultimo_acceso : timestamptz
+    ..
+    {field} CHECK (rol = 'apoyo') = (id_instancia IS NOT NULL)
+    {field} CHECK rol <> 'jefatura_carrera' OR clave_carrera IS NOT NULL
+  }
+  entity grupo {
+    * id_grupo : integer <<PK, identity>>
+    --
+    * clave : varchar(10) {P3}
+    * clave_carrera : varchar(10) <<FK>> {P3}
+    * ciclo : varchar(10) <<FK>>
+    * semestre : smallint
+    * id_tutor : integer <<FK>>  «II»
+    ..
+    {field} UQ (clave, ciclo)
+    {field} UQ (id_grupo, ciclo)
+    {field} CHECK semestre BETWEEN 1 AND 3
+  }
+  entity tutorado {
+    * numero_control : varchar(10) <<PK>>  «I»
+    ..
+    {field} CHECK numero_control ~~ '^SIN[0-9]{6}$'
+    {field} (solo prototipo, RES-02)
+  }
+  entity tutorado_grupo {
+    * numero_control : varchar(10) <<PK, FK>>  «I»
+    * ciclo : varchar(10) <<PK>>
+    --
+    * id_grupo : integer
+    ..
+    {field} FK (id_grupo, ciclo) → grupo (id_grupo, ciclo)
+  }
+}
+
+package "Seguimiento (RF-03, RF-04)" {
+  entity nota_seguimiento {
+    * id_nota : integer <<PK, identity>>
+    --
+    * numero_control : varchar(10) <<FK>>  «I»
+    * id_autor : integer <<FK>>  «II»
+    * fecha : timestamptz = now()
+    * eje : eje_nota
+    * texto : varchar(1000)  «S»
+  }
+  entity sesion {
+    * id_sesion : integer <<PK, identity>>
+    --
+    * id_tutor : integer <<FK>>  «II»
+    * id_grupo : integer <<FK>>
+    * tipo : tipo_sesion
+    * fecha : date
+    * tema : varchar(150)
+    acuerdos : varchar(500)  «S»
+    ..
+    {field} CHECK tipo = 'grupal' OR acuerdos IS NOT NULL
+  }
+  entity sesion_asistente {
+    * id_sesion : integer <<PK, FK>>
+    * numero_control : varchar(10) <<PK, FK>>  «I»
+  }
+}
+
+package "Canalización (RF-05 a RF-10)" {
+  entity canalizacion {
+    * folio : varchar(13) <<PK>>
+    --
+    * numero_control : varchar(10) <<FK>>  «I»
+    * id_tutor : integer <<FK>>  «II»
+    * id_instancia : integer <<FK>>
+    * clave_motivo : varchar(30) <<FK>>  «S»
+    * estudiante_informado : boolean
+    * prioridad : prioridad_canalizacion
+    * descripcion : varchar(500)  «S»
+    * estado : estado_canalizacion = 'Registrada'
+    * fecha_registro : timestamptz = now()
+    ..
+    {field} CHECK folio ~~ '^CAN-[0-9]{4}-[0-9]{4}$'
+    {field} CHECK char_length(descripcion) <= 500
+  }
+  entity folio_contador {
+    * anio : smallint <<PK>>
+    --
+    * ultimo : integer
+  }
+  entity transicion_permitida {
+    * estado_origen : estado_canalizacion <<PK>>
+    * estado_destino : estado_canalizacion <<PK>>
+    * rol_requerido : rol_usuario <<PK>>
+    --
+    * requiere_observacion : boolean
+    * incremento : varchar(8)
+    * activa : boolean
+  }
+  entity cambio_estado {
+    * id_cambio : bigint <<PK, identity>>
+    --
+    * folio : varchar(13) <<FK>>
+    estado_origen : estado_canalizacion
+    * estado_destino : estado_canalizacion
+    * id_usuario : integer <<FK>>  «II»
+    * fecha : timestamptz = now()
+    observacion : varchar(300)  «S»
+  }
+  entity alerta <<Segundo>> {
+    * id_alerta : integer <<PK, identity>>
+    --
+    * folio : varchar(13) <<FK>>
+    * fecha : date
+    * dias_habiles : smallint
+    * atendida : boolean = false
+    ..
+    {field} UQ (folio, fecha)
+  }
+  entity notificacion <<Segundo>> {
+    * id_notificacion : integer <<PK, identity>> {P3}
+    --
+    * id_destinatario : integer <<FK>>  «II»
+    * folio : varchar(13) <<FK>>
+    * id_cambio : bigint <<FK, UQ>>
+    * estado_nuevo : estado_canalizacion
+    * fecha : timestamptz = now()
+    * leida : boolean = false
+  }
+}
+
+package "Auditoría (RF-13)" {
+  entity bitacora {
+    * id : bigint <<PK, identity>>
+    --
+    * fecha_hora : timestamptz = now()
+    id_usuario : integer <<FK>>  «II»
+    * rol_bd : varchar(20)
+    * accion : varchar(40)
+    * entidad : varchar(40)
+    * id_registro : varchar(40)
+    * resultado : varchar(10)
+    ..
+    {field} CHECK resultado IN ('ok', 'denegado')
+  }
+}
+
+package "Esquema yolia (ADR-05)" <<Segundo>> {
+  entity "yolia.registro" as yolia_registro <<Segundo>> {
+    * id : integer <<PK, identity>>
+    --
+    * numero_control_sintetico : varchar(10)
+    * nivel : smallint
+    * cf : numeric(3,2)
+    * reglas : text
+    * fecha : date
+    ..
+    {field} CHECK numero_control_sintetico LIKE 'SIN%'
+    {field} CHECK nivel BETWEEN 0 AND 4
+    {field} CHECK cf BETWEEN 0 AND 1
+  }
+}
+
+' --- Relaciones (pata de gallo) ---
+carrera ||--o{ grupo
+ciclo ||--o{ grupo
+usuario ||--o{ grupo : tutor
+grupo ||--o{ tutorado_grupo
+tutorado ||--o{ tutorado_grupo
+carrera |o--o{ usuario : jefatura
+instancia_apoyo |o--o{ usuario : apoyo
+
+tutorado ||--o{ nota_seguimiento
+usuario ||--o{ nota_seguimiento : autor
+usuario ||--o{ sesion : tutor
+grupo ||--o{ sesion
+sesion ||--o{ sesion_asistente
+tutorado ||--o{ sesion_asistente
+
+tutorado ||--o{ canalizacion
+usuario ||--o{ canalizacion : registra
+instancia_apoyo ||--o{ canalizacion : destino
+motivo_deteccion ||--o{ canalizacion
+canalizacion ||--|{ cambio_estado : historial
+usuario ||--o{ cambio_estado : realiza
+canalizacion ||--o{ alerta
+canalizacion ||--o{ notificacion
+cambio_estado ||--o| notificacion
+usuario ||--o{ notificacion : destinatario
+usuario |o--o{ bitacora : actor
+
+' --- Reglas que no caben en una columna ---
+note right of canalizacion
+  Ningún rol tiene INSERT ni UPDATE directo.
+  fn_registrar_canalizacion(...): exige que el
+  tutorado pertenezca a un grupo del tutor en el
+  ciclo vigente (RN-03), asigna el folio con
+  folio_contador (bloqueo de fila) e inserta el
+  primer cambio_estado (origen nulo → Registrada).
+  fn_cambiar_estado(folio, destino, observacion):
+  valida (origen, destino, rol) contra
+  transicion_permitida con activa = verdadero;
+  el área de apoyo solo actúa sobre su instancia
+  y el tutor solo sobre sus folios; actualiza el
+  estado e inserta cambio_estado en la misma
+  transacción (D05). Un trigger BEFORE UPDATE
+  rechaza cualquier cambio de estado que no
+  provenga de la función (ADR-03).
+end note
+
+note bottom of transicion_permitida
+  11 filas de la Tabla VI. Las 8 del incremento
+  mínimo con activa = verdadero; las 3 de
+  «Escalada», con activa = falso hasta el
+  segundo incremento.
+  requiere_observacion = verdadero en:
+  Registrada → Cerrada y No asistió → Cerrada
+  (motivo de cierre, RN-04) y En atención →
+  Atendida (resultado general, RF-07).
+end note
+
+note bottom of bitacora
+  Solo inserción (ADR-04):
+  - cambios en nota_seguimiento, sesion,
+    sesion_asistente, canalizacion y cambio_estado:
+    triggers AFTER INSERT/UPDATE/DELETE;
+  - accesos al expediente y al folio, e intentos
+    denegados: los registra la aplicación;
+  - REVOKE UPDATE, DELETE, TRUNCATE a todos los roles
+    y trigger que rechaza UPDATE o DELETE.
+  Solo r_admin tiene SELECT.
+end note
+
+note top of parametro
+  N_DIAS_ALERTA = 5 (RN-07)
+  CICLO_VIGENTE = 20263
+  YOLIA_ACTIVO = falso (RF-15)
+end note
+
+note bottom of dia_inhabil
+  fn_dias_habiles(desde, hasta): cuenta los días
+  de lunes a viernes posteriores a «desde»,
+  hasta «hasta» inclusive, que no estén en esta
+  tabla. Con la tabla vacía reproduce el oráculo
+  del Anexo E (CAN-2026-0005: 15 días).
+  fn_generar_alertas(corte): estado en Registrada
+  o Recibida y días hábiles desde el último
+  cambio > N_DIAS_ALERTA (RF-10).
+end note
+
+note as VISTAS
+  <b>Vistas</b>
+  v_canalizacion_coordinacion (RN-05): folio, carrera,
+  clave de grupo, instancia, prioridad, estado,
+  fecha_registro, fecha del último cambio y días
+  hábiles sin cambio. Sin numero_control, descripcion,
+  motivo ni observaciones. Dueño: ohtli_owner.
+  Única fuente de r_coord y r_jefatura.
+  v_indicadores_grupo (RF-12): canalizaciones por
+  estado, días promedio de atención y sesiones
+  realizadas por grupo.
+
+  <b>Seguridad por filas (ADR-02)</b>
+  r_tutor: tutorados, notas, sesiones y canalizaciones
+  de sus grupos del ciclo vigente.
+  r_apoyo: canalizaciones con id_instancia igual a la
+  de su usuario y su historial.
+  r_coord y r_jefatura: sin privilegios sobre las tablas
+  de canalización; solo las vistas.
+  r_admin: catálogos, usuarios y bitácora; sin acceso a
+  notas, sesiones ni canalizaciones.
+  El usuario se toma de current_setting('app.id_usuario').
+end note
+
+note as CARGA
+  <b>Carga de datos sintéticos (Anexo E)</b>
+  La ejecuta ohtli_owner, sin pasar por las funciones,
+  para reproducir el historial tal como está en el Excel
+  (incluidos los folios en «Escalada»). El usuario
+  genérico «APOYO» del Excel se asigna a APOYO-PSI o
+  APOYO-DA según la instancia del folio.
+end note
+@enduml

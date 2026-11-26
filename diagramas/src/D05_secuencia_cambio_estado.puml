@@ -1,0 +1,52 @@
+@startuml D05_secuencia_cambio_estado
+' OHTLI · P3 · D05 Diagrama de secuencia: cambio de estado de una canalización
+' Fuente: P2 V4, RF-06, RF-07, RF-09, RF-13, RNF-02, Tabla VI
+' Nivel lógico (independiente de la tecnología): los participantes son responsabilidades
+' del diseño, no componentes de un framework concreto.
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+autonumber
+
+actor "Área de apoyo" as U
+boundary "Pantalla\nBandeja" as UI
+control "Control de\nacceso" as AC
+control "Servicio de\ncanalización" as SC
+entity "Canalizacion" as CAN
+entity "CambioEstado" as CE
+entity "Bitacora" as BIT
+control "Notificador" as NOT
+
+U -> UI : elegir folio y acción\n(p. ej., «Registrar atención» + observación)
+UI -> AC : autorizar(usuario, folio, acción)
+AC -> CAN : consultar instancia de destino del folio
+CAN --> AC : id_instancia
+
+alt rol ≠ apoyo o instancia ≠ instancia del usuario (RNF-02)
+  AC -> BIT : registrar(intento denegado)
+  AC --> UI : acceso denegado
+  UI --> U : mensaje «acceso denegado»
+else autorizado
+  AC -> SC : cambiarEstado(folio, destino, usuario, observación)
+  SC -> CAN : obtener estado actual
+  CAN --> SC : origen
+  alt (origen, destino, rol) no está en la Tabla VI
+    SC --> UI : transición rechazada (RF-06)
+    UI --> U : mensaje con el estado actual
+  else transición permitida
+    group operación atómica (todo o nada)
+      SC -> CAN : estado = destino
+      SC -> CE : insertar(origen, destino, usuario, fecha, observación)
+      SC -> BIT : insertar(usuario, fecha, «cambio de estado», folio)
+    end
+    SC -> NOT : notificar(tutor del folio, folio, destino)
+    note right of NOT
+      RF-09: segundo incremento.
+      En P4 el paso se diseña,
+      pero no se prueba.
+    end note
+    SC --> UI : estado actualizado
+    UI --> U : folio con nuevo estado e historial
+  end
+end
+@enduml

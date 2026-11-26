@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OHTLI · Prototipo navegable</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: sobrio, institucional; herramienta de trabajo para tutores y áreas de apoyo
+   IDEA: el expediente/folio de canalización como hoja técnica con su historial
+   PICTURE: la herramienta misma (bandeja, folio con su ciclo de estados)
+   COLOUR and TYPE: franja cobalto, blanco, tinta negra, zonas #eef2ff; Space Grotesk + Inter
+   LAYOUT: franja de título, navegación por rol, panel de trabajo; una columna bajo 600px */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#0a0d18);--ink:light-dark(#10131c,#e8ebf5);--mut:light-dark(#566079,#9aa4bd);--line:light-dark(#d9deea,#262c40);--zone:light-dark(#eef2ff,#121831);--co:#1240e0;--co2:light-dark(#1240e0,#7d9bff);--ok:light-dark(#137a3a,#5fd38c);--bad:light-dark(#b3261e,#ff8a80);--warn:light-dark(#8a5a00,#f2c14e)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:"Space Grotesk",Inter,sans-serif;font-weight:600;line-height:1.1;margin:0}
+h1{font-size:clamp(28px,4vw,40px)}h2{font-size:24px}h3{font-size:17px}
+a{color:var(--co2)}
+.strip{background:var(--co);color:#fff;padding:12px max(4vw,16px);display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
+.strip b{font-family:"Space Grotesk";font-size:20px;letter-spacing:.02em}
+.strip .who{margin-inline-start:auto;font-size:14px;opacity:.95}
+.strip button{background:transparent;color:#fff;border:1px solid #ffffff99}
+.note{background:var(--zone);padding:8px max(4vw,16px);font-size:13px;color:var(--mut)}
+nav{display:flex;gap:4px;overflow-x:auto;padding:8px max(4vw,16px);border-bottom:1px solid var(--line)}
+nav button{flex:none;border:0;background:transparent;color:var(--ink);border-radius:8px}
+nav button[aria-current=page]{background:var(--zone);color:var(--co2);font-weight:600}
+main{padding:20px max(4vw,16px) 48px;max-width:1240px}
+.head{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline;margin-bottom:14px}
+.chip{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid currentColor;white-space:nowrap}
+.inc-Mínimo{color:var(--co2)}.inc-Segundo{color:var(--warn)}.inc-Tercero{color:var(--mut)}
+.st{display:inline-block;font-size:13px;font-weight:600;padding:2px 9px;border-radius:6px;white-space:nowrap;background:var(--zone)}
+.st-Registrada{color:#5b3fd6}.st-Recibida{color:var(--co2)}.st-En{color:#0b7d8c}.st-No{color:var(--bad)}.st-Atendida{color:var(--ok)}.st-Escalada{color:var(--warn)}.st-Cerrada{color:var(--mut)}
+button,.btn{font:inherit;font-size:15px;min-height:44px;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+button.pri{background:var(--co);color:#fff;border-color:var(--co)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #7d9bff;outline-offset:1px}
+input,select,textarea{font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);width:100%}
+textarea{min-height:90px;resize:vertical}
+label{display:block;font-size:14px;font-weight:500;margin:12px 0 4px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:18px 28px;align-items:start}
+.panel{border:1px solid var(--line);border-radius:12px;padding:16px}
+.zone{background:var(--zone);border-radius:12px;padding:14px 16px}
+.mut{color:var(--mut);font-size:14px}
+.flash{padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:15px;border-inline-start:4px solid}
+.flash.ok{border-color:var(--ok);background:var(--zone)}.flash.bad{border-color:var(--bad);background:var(--zone)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:start;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:13px;color:var(--mut);font-weight:500}
+td.n,th.n{text-align:end;font-variant-numeric:tabular-nums}
+tr.click{cursor:pointer}tr.click:hover{background:var(--zone)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:12px}
+.card{border:1px solid var(--line);border-radius:12px;padding:14px;text-align:start;display:block;width:100%;min-height:auto}
+.card .top{display:flex;justify-content:space-between;gap:8px;margin-bottom:6px}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;font-size:15px}.kv dt{color:var(--mut)}.kv dd{margin:0}
+.big{font-family:"Space Grotesk";font-size:clamp(30px,5vw,44px);line-height:1}
+.bar{height:10px;border-radius:5px;background:var(--co)}
+.login{max-width:980px}
+.acc{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:10px;margin:16px 0}
+.acc button{text-align:start;padding:12px 14px}.acc small{display:block;color:var(--mut);font-size:13px}
+.chk{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:2px 10px;max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:8px}
+.chk label{margin:0;font-weight:400;display:flex;gap:6px;align-items:center;min-height:32px}.chk input{width:auto}
+.scroll{overflow-x:auto}
+pre,.scroll{overflow-x:auto}code{overflow-wrap:anywhere}
+@media(max-width:600px){table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--mut)}.stack td:empty{display:none}.strip .who{margin-inline-start:0;width:100%}}
+@media print{.strip,nav,.note,.noprint{display:none}main{padding:0}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+<div id="app"></div>
+<script>const DATA = {"tutorados": [{"nc": "SIN261001", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261002", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261003", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261004", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261005", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261006", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261007", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261008", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261009", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261010", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261011", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261012", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261013", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261014", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261015", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261016", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261017", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261018", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261019", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261020", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261021", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261022", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261023", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261024", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261025", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261026", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261027", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261028", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261029", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261030", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261031", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261032", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261033", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261034", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261035", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261036", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261037", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261038", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261039", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN261040", "grupo": "ISC 1A", "tutor": "T01"}, {"nc": "SIN262001", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262002", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262003", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262004", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262005", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262006", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262007", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262008", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262009", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262010", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262011", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262012", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262013", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262014", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262015", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262016", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262017", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262018", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262019", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262020", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262021", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262022", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262023", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262024", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262025", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262026", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262027", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262028", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262029", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262030", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262031", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262032", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262033", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262034", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262035", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262036", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262037", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262038", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262039", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN262040", "grupo": "IIND 1B", "tutor": "T02"}, {"nc": "SIN263001", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263002", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263003", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263004", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263005", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263006", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263007", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263008", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263009", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263010", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263011", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263012", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263013", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263014", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263015", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263016", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263017", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263018", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263019", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263020", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263021", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263022", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263023", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263024", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263025", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263026", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263027", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263028", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263029", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263030", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263031", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263032", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263033", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263034", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263035", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263036", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263037", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263038", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263039", "grupo": "IGE 1C", "tutor": "T03"}, {"nc": "SIN263040", "grupo": "IGE 1C", "tutor": "T03"}], "sesiones": [{"id": "SES-T01-01", "tutor": "T01", "grupo": "ISC 1A", "fecha": "2026-08-26", "tipo": "grupal", "asistentes": 33, "tema": "Integración al grupo", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T01-02", "tutor": "T01", "grupo": "ISC 1A", "fecha": "2026-09-08", "tipo": "grupal", "asistentes": 31, "tema": "Hábitos de estudio", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T01-03", "tutor": "T01", "grupo": "ISC 1A", "fecha": "2026-09-21", "tipo": "grupal", "asistentes": 30, "tema": "Administración del tiempo", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T01-04", "tutor": "T01", "grupo": "ISC 1A", "fecha": "2026-10-05", "tipo": "grupal", "asistentes": 36, "tema": "Resultados del primer parcial", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T01-05", "tutor": "T01", "grupo": "ISC 1A", "fecha": "2026-10-20", "tipo": "grupal", "asistentes": 37, "tema": "Servicios institucionales", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T01-06", "tutor": "T01", "grupo": "ISC 1A", "fecha": "2026-11-04", "tipo": "grupal", "asistentes": 36, "tema": "Plan de vida y carrera", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T01-I1", "tutor": "T01", "grupo": "ISC 1A", "fecha": "2026-09-24", "tipo": "individual", "asistentes": 1, "tema": "Seguimiento individual", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T01-I2", "tutor": "T01", "grupo": "ISC 1A", "fecha": "2026-09-30", "tipo": "individual", "asistentes": 1, "tema": "Seguimiento individual", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T01-I3", "tutor": "T01", "grupo": "ISC 1A", "fecha": "2026-09-03", "tipo": "individual", "asistentes": 1, "tema": "Seguimiento individual", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T02-01", "tutor": "T02", "grupo": "IIND 1B", "fecha": "2026-08-24", "tipo": "grupal", "asistentes": 38, "tema": "Integración al grupo", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T02-02", "tutor": "T02", "grupo": "IIND 1B", "fecha": "2026-09-07", "tipo": "grupal", "asistentes": 35, "tema": "Hábitos de estudio", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T02-03", "tutor": "T02", "grupo": "IIND 1B", "fecha": "2026-09-21", "tipo": "grupal", "asistentes": 33, "tema": "Administración del tiempo", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T02-04", "tutor": "T02", "grupo": "IIND 1B", "fecha": "2026-10-06", "tipo": "grupal", "asistentes": 35, "tema": "Resultados del primer parcial", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T02-05", "tutor": "T02", "grupo": "IIND 1B", "fecha": "2026-10-21", "tipo": "grupal", "asistentes": 31, "tema": "Servicios institucionales", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T02-06", "tutor": "T02", "grupo": "IIND 1B", "fecha": "2026-11-04", "tipo": "grupal", "asistentes": 38, "tema": "Plan de vida y carrera", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T02-I1", "tutor": "T02", "grupo": "IIND 1B", "fecha": "2026-09-29", "tipo": "individual", "asistentes": 1, "tema": "Seguimiento individual", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T02-I2", "tutor": "T02", "grupo": "IIND 1B", "fecha": "2026-10-22", "tipo": "individual", "asistentes": 1, "tema": "Seguimiento individual", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T02-I3", "tutor": "T02", "grupo": "IIND 1B", "fecha": "2026-09-21", "tipo": "individual", "asistentes": 1, "tema": "Seguimiento individual", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T03-01", "tutor": "T03", "grupo": "IGE 1C", "fecha": "2026-08-24", "tipo": "grupal", "asistentes": 39, "tema": "Integración al grupo", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T03-02", "tutor": "T03", "grupo": "IGE 1C", "fecha": "2026-09-07", "tipo": "grupal", "asistentes": 31, "tema": "Hábitos de estudio", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T03-03", "tutor": "T03", "grupo": "IGE 1C", "fecha": "2026-09-22", "tipo": "grupal", "asistentes": 36, "tema": "Administración del tiempo", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T03-04", "tutor": "T03", "grupo": "IGE 1C", "fecha": "2026-10-05", "tipo": "grupal", "asistentes": 30, "tema": "Resultados del primer parcial", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T03-05", "tutor": "T03", "grupo": "IGE 1C", "fecha": "2026-10-20", "tipo": "grupal", "asistentes": 32, "tema": "Servicios institucionales", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T03-06", "tutor": "T03", "grupo": "IGE 1C", "fecha": "2026-11-04", "tipo": "grupal", "asistentes": 34, "tema": "Plan de vida y carrera", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T03-I1", "tutor": "T03", "grupo": "IGE 1C", "fecha": "2026-09-22", "tipo": "individual", "asistentes": 1, "tema": "Seguimiento individual", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T03-I2", "tutor": "T03", "grupo": "IGE 1C", "fecha": "2026-10-24", "tipo": "individual", "asistentes": 1, "tema": "Seguimiento individual", "acuerdos": "Acuerdos sintéticos de prueba"}, {"id": "SES-T03-I3", "tutor": "T03", "grupo": "IGE 1C", "fecha": "2026-10-21", "tipo": "individual", "asistentes": 1, "tema": "Seguimiento individual", "acuerdos": "Acuerdos sintéticos de prueba"}], "canalizaciones": [{"folio": "CAN-2026-0001", "nc": "SIN261023", "tutor": "T01", "instancia": "Psicología", "prioridad": "prioritaria", "fecha": "2026-10-26", "estado": "Atendida"}, {"folio": "CAN-2026-0002", "nc": "SIN261022", "tutor": "T01", "instancia": "Desarrollo Académico", "prioridad": "normal", "fecha": "2026-09-21", "estado": "No asistió"}, {"folio": "CAN-2026-0003", "nc": "SIN261026", "tutor": "T01", "instancia": "Desarrollo Académico", "prioridad": "prioritaria", "fecha": "2026-09-12", "estado": "Cerrada"}, {"folio": "CAN-2026-0004", "nc": "SIN261008", "tutor": "T01", "instancia": "Psicología", "prioridad": "prioritaria", "fecha": "2026-09-12", "estado": "En atención"}, {"folio": "CAN-2026-0005", "nc": "SIN261028", "tutor": "T01", "instancia": "Psicología", "prioridad": "normal", "fecha": "2026-10-27", "estado": "Recibida"}, {"folio": "CAN-2026-0006", "nc": "SIN262005", "tutor": "T02", "instancia": "Psicología", "prioridad": "prioritaria", "fecha": "2026-10-28", "estado": "Registrada"}, {"folio": "CAN-2026-0007", "nc": "SIN262030", "tutor": "T02", "instancia": "Psicología", "prioridad": "normal", "fecha": "2026-10-03", "estado": "Escalada"}, {"folio": "CAN-2026-0008", "nc": "SIN262018", "tutor": "T02", "instancia": "Desarrollo Académico", "prioridad": "normal", "fecha": "2026-11-16", "estado": "Recibida"}, {"folio": "CAN-2026-0009", "nc": "SIN262033", "tutor": "T02", "instancia": "Psicología", "prioridad": "prioritaria", "fecha": "2026-10-17", "estado": "Atendida"}, {"folio": "CAN-2026-0010", "nc": "SIN262003", "tutor": "T02", "instancia": "Desarrollo Académico", "prioridad": "prioritaria", "fecha": "2026-10-23", "estado": "No asistió"}, {"folio": "CAN-2026-0011", "nc": "SIN263035", "tutor": "T03", "instancia": "Desarrollo Académico", "prioridad": "normal", "fecha": "2026-10-04", "estado": "Cerrada"}, {"folio": "CAN-2026-0012", "nc": "SIN263007", "tutor": "T03", "instancia": "Desarrollo Académico", "prioridad": "normal", "fecha": "2026-09-08", "estado": "En atención"}, {"folio": "CAN-2026-0013", "nc": "SIN263002", "tutor": "T03", "instancia": "Psicología", "prioridad": "prioritaria", "fecha": "2026-10-29", "estado": "Recibida"}, {"folio": "CAN-2026-0014", "nc": "SIN263004", "tutor": "T03", "instancia": "Psicología", "prioridad": "prioritaria", "fecha": "2026-11-04", "estado": "Registrada"}, {"folio": "CAN-2026-0015", "nc": "SIN263034", "tutor": "T03", "instancia": "Psicología", "prioridad": "prioritaria", "fecha": "2026-10-20", "estado": "Escalada"}], "cambios": [{"folio": "CAN-2026-0001", "origen": "—", "destino": "Registrada", "usuario": "T01", "fecha": "2026-10-26"}, {"folio": "CAN-2026-0001", "origen": "Registrada", "destino": "Recibida", "usuario": "APOYO", "fecha": "2026-10-27"}, {"folio": "CAN-2026-0001", "origen": "Recibida", "destino": "En atención", "usuario": "APOYO", "fecha": "2026-10-29"}, {"folio": "CAN-2026-0001", "origen": "En atención", "destino": "Atendida", "usuario": "APOYO", "fecha": "2026-11-04"}, {"folio": "CAN-2026-0002", "origen": "—", "destino": "Registrada", "usuario": "T01", "fecha": "2026-09-21"}, {"folio": "CAN-2026-0002", "origen": "Registrada", "destino": "Recibida", "usuario": "APOYO", "fecha": "2026-09-22"}, {"folio": "CAN-2026-0002", "origen": "Recibida", "destino": "No asistió", "usuario": "APOYO", "fecha": "2026-09-25"}, {"folio": "CAN-2026-0003", "origen": "—", "destino": "Registrada", "usuario": "T01", "fecha": "2026-09-12"}, {"folio": "CAN-2026-0003", "origen": "Registrada", "destino": "Recibida", "usuario": "APOYO", "fecha": "2026-09-14"}, {"folio": "CAN-2026-0003", "origen": "Recibida", "destino": "En atención", "usuario": "APOYO", "fecha": "2026-09-16"}, {"folio": "CAN-2026-0003", "origen": "En atención", "destino": "Atendida", "usuario": "APOYO", "fecha": "2026-09-22"}, {"folio": "CAN-2026-0003", "origen": "Atendida", "destino": "Cerrada", "usuario": "T01", "fecha": "2026-09-24"}, {"folio": "CAN-2026-0004", "origen": "—", "destino": "Registrada", "usuario": "T01", "fecha": "2026-09-12"}, {"folio": "CAN-2026-0004", "origen": "Registrada", "destino": "Recibida", "usuario": "APOYO", "fecha": "2026-09-14"}, {"folio": "CAN-2026-0004", "origen": "Recibida", "destino": "En atención", "usuario": "APOYO", "fecha": "2026-09-16"}, {"folio": "CAN-2026-0005", "origen": "—", "destino": "Registrada", "usuario": "T01", "fecha": "2026-10-27"}, {"folio": "CAN-2026-0005", "origen": "Registrada", "destino": "Recibida", "usuario": "APOYO", "fecha": "2026-10-28"}, {"folio": "CAN-2026-0006", "origen": "—", "destino": "Registrada", "usuario": "T02", "fecha": "2026-10-28"}, {"folio": "CAN-2026-0007", "origen": "—", "destino": "Registrada", "usuario": "T02", "fecha": "2026-10-03"}, {"folio": "CAN-2026-0007", "origen": "Registrada", "destino": "Escalada", "usuario": "JEF_CARRERA", "fecha": "2026-10-06"}, {"folio": "CAN-2026-0008", "origen": "—", "destino": "Registrada", "usuario": "T02", "fecha": "2026-11-16"}, {"folio": "CAN-2026-0008", "origen": "Registrada", "destino": "Recibida", "usuario": "APOYO", "fecha": "2026-11-17"}, {"folio": "CAN-2026-0009", "origen": "—", "destino": "Registrada", "usuario": "T02", "fecha": "2026-10-17"}, {"folio": "CAN-2026-0009", "origen": "Registrada", "destino": "Recibida", "usuario": "APOYO", "fecha": "2026-10-19"}, {"folio": "CAN-2026-0009", "origen": "Recibida", "destino": "En atención", "usuario": "APOYO", "fecha": "2026-10-21"}, {"folio": "CAN-2026-0009", "origen": "En atención", "destino": "Atendida", "usuario": "APOYO", "fecha": "2026-10-27"}, {"folio": "CAN-2026-0010", "origen": "—", "destino": "Registrada", "usuario": "T02", "fecha": "2026-10-23"}, {"folio": "CAN-2026-0010", "origen": "Registrada", "destino": "Recibida", "usuario": "APOYO", "fecha": "2026-10-26"}, {"folio": "CAN-2026-0010", "origen": "Recibida", "destino": "No asistió", "usuario": "APOYO", "fecha": "2026-10-29"}, {"folio": "CAN-2026-0011", "origen": "—", "destino": "Registrada", "usuario": "T03", "fecha": "2026-10-04"}, {"folio": "CAN-2026-0011", "origen": "Registrada", "destino": "Recibida", "usuario": "APOYO", "fecha": "2026-10-05"}, {"folio": "CAN-2026-0011", "origen": "Recibida", "destino": "En atención", "usuario": "APOYO", "fecha": "2026-10-07"}, {"folio": "CAN-2026-0011", "origen": "En atención", "destino": "Atendida", "usuario": "APOYO", "fecha": "2026-10-13"}, {"folio": "CAN-2026-0011", "origen": "Atendida", "destino": "Cerrada", "usuario": "T03", "fecha": "2026-10-15"}, {"folio": "CAN-2026-0012", "origen": "—", "destino": "Registrada", "usuario": "T03", "fecha": "2026-09-08"}, {"folio": "CAN-2026-0012", "origen": "Registrada", "destino": "Recibida", "usuario": "APOYO", "fecha": "2026-09-09"}, {"folio": "CAN-2026-0012", "origen": "Recibida", "destino": "En atención", "usuario": "APOYO", "fecha": "2026-09-11"}, {"folio": "CAN-2026-0013", "origen": "—", "destino": "Registrada", "usuario": "T03", "fecha": "2026-10-29"}, {"folio": "CAN-2026-0013", "origen": "Registrada", "destino": "Recibida", "usuario": "APOYO", "fecha": "2026-10-30"}, {"folio": "CAN-2026-0014", "origen": "—", "destino": "Registrada", "usuario": "T03", "fecha": "2026-11-04"}, {"folio": "CAN-2026-0015", "origen": "—", "destino": "Registrada", "usuario": "T03", "fecha": "2026-10-20"}, {"folio": "CAN-2026-0015", "origen": "Registrada", "destino": "Escalada", "usuario": "JEF_CARRERA", "fecha": "2026-10-22"}], "oraculo": [{"folio": "CAN-2026-0005", "estado": "Recibida", "ultimo": "2026-10-28", "dias": 15, "alerta": "Sí"}, {"folio": "CAN-2026-0006", "estado": "Registrada", "ultimo": "2026-10-28", "dias": 15, "alerta": "Sí"}, {"folio": "CAN-2026-0008", "estado": "Recibida", "ultimo": "2026-11-17", "dias": 1, "alerta": "No"}, {"folio": "CAN-2026-0013", "estado": "Recibida", "ultimo": "2026-10-30", "dias": 13, "alerta": "Sí"}, {"folio": "CAN-2026-0014", "estado": "Registrada", "ultimo": "2026-11-04", "dias": 10, "alerta": "Sí"}], "esperados": [{"tutor": "T01", "grupo": "ISC 1A", "tutorados": 40, "grupales": 6, "individuales": 3, "canal": 5, "porEstado": "Atendida: 1, Cerrada: 1, En atención: 1, No asistió: 1, Recibida: 1", "alertas": 1}, {"tutor": "T02", "grupo": "IIND 1B", "tutorados": 40, "grupales": 6, "individuales": 3, "canal": 5, "porEstado": "Atendida: 1, Escalada: 1, No asistió: 1, Recibida: 1, Registrada: 1", "alertas": 1}, {"tutor": "T03", "grupo": "IGE 1C", "tutorados": 40, "grupales": 6, "individuales": 3, "canal": 5, "porEstado": "Cerrada: 1, En atención: 1, Escalada: 1, Recibida: 1, Registrada: 1", "alertas": 2}], "escenarios": [{"id": "ESC-01", "nombre": "Informe periódico de cada tutor (RF-11)", "proc": "Generar el informe de T01, T02 y T03 al 2026-11-18", "esperado": "Los conteos coinciden con la hoja Resultados_esperados", "inc": "Mínimo"}, {"id": "ESC-02", "nombre": "Historial completo (RF-06, RF-13)", "proc": "Reconstruir el historial de las 15 canalizaciones", "esperado": "42 cambios de estado, todos con usuario y fecha; ningún folio con huecos", "inc": "Mínimo"}, {"id": "ESC-03", "nombre": "Transición no permitida (RF-06)", "proc": "Intentar pasar una canalización de «Registrada» a «Atendida»", "esperado": "El sistema la rechaza y no se registra cambio", "inc": "Mínimo"}, {"id": "ESC-04", "nombre": "Cierre sin atención ni motivo (RN-04)", "proc": "Intentar cerrar una canalización en «Recibida» sin motivo", "esperado": "El sistema la rechaza", "inc": "Mínimo"}, {"id": "ESC-05", "nombre": "Inasistencia (RN-09)", "proc": "Registrar «No asistió» en una canalización", "esperado": "El caso permanece abierto hasta que el tutor lo cierra con motivo", "inc": "Mínimo"}, {"id": "ESC-06", "nombre": "Confidencialidad (RN-05, RNF-02)", "proc": "Consultar los 15 folios con la cuenta de coordinación", "esperado": "Se ven estado y fechas; ninguna descripción ni número de control", "inc": "Mínimo"}, {"id": "ESC-07", "nombre": "Ámbito del tutor (RN-03, RF-02)", "proc": "Con la cuenta de T01, listar tutorados e intentar canalizar a un estudiante de T02", "esperado": "Ve exactamente 40 tutorados; la canalización ajena es rechazada", "inc": "Mínimo"}, {"id": "ESC-08", "nombre": "Alertas (RF-10, RN-07)", "proc": "Calcular alertas con N = 5 días hábiles al 2026-11-18", "esperado": "Exactamente 4 alertas: CAN-2026-0005, CAN-2026-0006, CAN-2026-0013, CAN-2026-0014", "inc": "Segundo"}, {"id": "ESC-09", "nombre": "Escalamiento (RF-08, RN-03)", "proc": "Escalar una canalización con la cuenta de jefatura", "esperado": "Estado «Escalada» con historial completo; solo la jefatura puede hacerlo", "inc": "Segundo"}]};</script>
+<script>/* OHTLI · Prototipo navegable · Lógica del dominio (independiente de la interfaz)
+   Implementa D02 (clases), D03 (máquina de estados, Tabla VI) y D05 (secuencia de cambio de estado).
+   Datos: Anexo E de P2 V4 (sintéticos, semilla 20261118). */
+const OHTLI = (function () {
+  const FECHA_REF = '2026-11-18'; // fecha simulada del sistema (fecha de corte del oráculo)
+  const N_ALERTA = 5;              // RN-07, valor inicial
+
+  const ESTADOS = ['Registrada', 'Recibida', 'En atención', 'No asistió', 'Atendida', 'Escalada', 'Cerrada'];
+
+  // Tabla VI (P2 V4). rol: tutor | apoyo | jefatura | coord
+  const TRANSICIONES = [
+    { o: 'Registrada', d: 'Recibida', rol: 'apoyo', inc: 'Mínimo', accion: 'Marcar recibida' },
+    { o: 'Recibida', d: 'En atención', rol: 'apoyo', inc: 'Mínimo', accion: 'Iniciar atención' },
+    { o: 'En atención', d: 'Atendida', rol: 'apoyo', inc: 'Mínimo', accion: 'Registrar atención' },
+    { o: 'Recibida', d: 'No asistió', rol: 'apoyo', inc: 'Mínimo', accion: 'Registrar inasistencia' },
+    { o: 'No asistió', d: 'Recibida', rol: 'apoyo', inc: 'Mínimo', accion: 'Programar nueva cita' },
+    { o: 'Atendida', d: 'Cerrada', rol: 'tutor', inc: 'Mínimo', accion: 'Cerrar caso' },
+    { o: 'Registrada', d: 'Cerrada', rol: 'tutor', inc: 'Mínimo', accion: 'Cerrar con motivo', motivo: true },
+    { o: 'No asistió', d: 'Cerrada', rol: 'tutor', inc: 'Mínimo', accion: 'Cerrar con motivo', motivo: true },
+    { o: 'Registrada', d: 'Escalada', rol: 'jefatura', inc: 'Segundo', accion: 'Escalar' },
+    { o: 'Recibida', d: 'Escalada', rol: 'jefatura', inc: 'Segundo', accion: 'Escalar' },
+    { o: 'Escalada', d: 'En atención', rol: 'coord', inc: 'Segundo', accion: 'Registrar vinculación externa' }
+  ];
+
+  const USUARIOS = [
+    { id: 'T01', nombre: 'Tutor T01', rol: 'tutor', grupo: 'ISC 1A' },
+    { id: 'T02', nombre: 'Tutor T02', rol: 'tutor', grupo: 'IIND 1B' },
+    { id: 'T03', nombre: 'Tutor T03', rol: 'tutor', grupo: 'IGE 1C' },
+    { id: 'APOYO-PSI', nombre: 'Área de Psicología', rol: 'apoyo', instancia: 'Psicología' },
+    { id: 'APOYO-DA', nombre: 'Área de Desarrollo Académico', rol: 'apoyo', instancia: 'Desarrollo Académico' },
+    { id: 'JEF_CARRERA', nombre: 'Jefatura de carrera', rol: 'jefatura' },
+    { id: 'COORD', nombre: 'Coordinación de tutoría', rol: 'coord' },
+    { id: 'ADMIN', nombre: 'Administrador', rol: 'admin' }
+  ];
+  const ROLES = { tutor: 'Tutor', apoyo: 'Área de apoyo', jefatura: 'Jefatura de carrera', coord: 'Coordinación de tutoría', admin: 'Administrador' };
+  const INSTANCIAS = ['Psicología', 'Desarrollo Académico'];
+  const MOTIVOS = ['inasistencia', 'bajo rendimiento', 'conducta', 'solicitud del estudiante'];
+  const EJES = ['académico', 'personal', 'profesional'];
+  const SIN_DATO = 'Sin dato en el Anexo E';
+
+  function semilla(DATA) {
+    return {
+      tutorados: DATA.tutorados.map(t => ({ ...t })),
+      sesiones: DATA.sesiones.map(s => ({ ...s, fuente: 'Anexo E' })),
+      canalizaciones: DATA.canalizaciones.map(c => ({
+        ...c, motivo: null, informado: null, descripcion: 'Descripción sintética de prueba', fuente: 'Anexo E'
+      })),
+      cambios: DATA.cambios.map((c, i) => ({ id: i + 1, ...c, observacion: '', fuente: 'Anexo E' })),
+      notas: [],
+      notificaciones: [],
+      bitacora: [],
+      seq: 0
+    };
+  }
+
+  const usuario = id => USUARIOS.find(u => u.id === id);
+  const ahora = () => FECHA_REF + ' ' + new Date().toTimeString().slice(0, 8);
+  const res = (ok, codigo, mensaje, extra) => ({ ok, codigo, mensaje, ...extra });
+
+  function bit(st, u, accion, entidad, idRegistro) {
+    st.seq += 1;
+    st.bitacora.push({ id: st.seq, usuario: u.id, fecha: ahora(), accion, entidad, registro: idRegistro });
+  }
+
+  // Control de acceso (RNF-02): ¿puede el usuario ver u operar este folio?
+  function puedeVerFolio(u, c) {
+    if (u.rol === 'tutor') return c.tutor === u.id;
+    if (u.rol === 'apoyo') return c.instancia === u.instancia;
+    return u.rol === 'jefatura' || u.rol === 'coord';
+  }
+  // RN-05: solo el tutor y la instancia de destino ven el detalle confidencial
+  function veDetalle(u, c) {
+    return (u.rol === 'tutor' && c.tutor === u.id) || (u.rol === 'apoyo' && c.instancia === u.instancia);
+  }
+
+  function transicionesDisponibles(u, c) {
+    return TRANSICIONES.filter(t => t.o === c.estado && t.rol === u.rol);
+  }
+
+  // D05: cambio de estado
+  function cambiarEstado(st, uid, folio, destino, observacion, motivo) {
+    const u = usuario(uid);
+    const c = st.canalizaciones.find(x => x.folio === folio);
+    if (!c) return res(false, 'NO_EXISTE', 'El folio no existe.');
+    if (!puedeVerFolio(u, c) || u.rol === 'admin') {
+      bit(st, u, 'Intento denegado de cambio de estado', 'Canalizacion', folio);
+      return res(false, 'DENEGADO', 'Acceso denegado: el folio no corresponde a su rol o instancia (RNF-02).');
+    }
+    const t = TRANSICIONES.find(x => x.o === c.estado && x.d === destino && x.rol === u.rol);
+    if (!t) return res(false, 'NO_PERMITIDA', `Transición no permitida: «${c.estado}» → «${destino}» para ${ROLES[u.rol].toLowerCase()} (RF-06, Tabla VI). No se registró ningún cambio.`);
+    if (t.inc !== 'Mínimo') return res(false, 'INCREMENTO', `Transición especificada para el ${t.inc.toLowerCase()} incremento (RF-08); no está implementada en este prototipo.`);
+    if (t.motivo && !(motivo || '').trim()) return res(false, 'MOTIVO', 'Para cerrar sin atención se requiere un motivo de cierre (RN-04).');
+    if ((observacion || '').length > 300) return res(false, 'VALIDACION', 'La observación admite hasta 300 caracteres.');
+    // operación atómica: estado + CambioEstado + Bitácora
+    const origen = c.estado;
+    c.estado = destino;
+    st.cambios.push({ id: st.cambios.length + 1, folio, origen, destino, usuario: u.id, fecha: ahora(), observacion: [observacion, motivo ? 'Motivo de cierre: ' + motivo : ''].filter(Boolean).join(' · '), fuente: 'Prueba' });
+    bit(st, u, `Cambio de estado ${origen} → ${destino}`, 'Canalizacion', folio);
+    // RF-09 (segundo incremento): notificación al tutor
+    if (u.id !== c.tutor) st.notificaciones.push({ para: c.tutor, folio, estado: destino, fecha: ahora(), leida: false });
+    return res(true, 'OK', `Folio ${folio}: «${origen}» → «${destino}».`);
+  }
+
+  function siguienteFolio(st) {
+    const n = Math.max(...st.canalizaciones.map(c => +c.folio.slice(-4))) + 1;
+    return 'CAN-2026-' + String(n).padStart(4, '0');
+  }
+
+  // RF-05, RN-03, RN-09, RNF-04
+  function registrarCanalizacion(st, uid, f) {
+    const u = usuario(uid);
+    if (u.rol !== 'tutor') return res(false, 'DENEGADO', 'Solo el tutor registra canalizaciones (RN-03).');
+    const nc = (f.nc || '').trim().toUpperCase();
+    const t = st.tutorados.find(x => x.nc === nc);
+    if (!t) return res(false, 'VALIDACION', 'El número de control no existe en el conjunto de tutorados.');
+    if (t.tutor !== u.id) {
+      bit(st, u, 'Intento denegado de canalización', 'Tutorado', nc);
+      return res(false, 'DENEGADO', `Rechazada: ${nc} no pertenece a su grupo. Solo el tutor del estudiante registra su canalización (RN-03).`);
+    }
+    const faltan = [];
+    if (!f.motivo) faltan.push('motivo de detección');
+    if (!f.instancia) faltan.push('instancia de destino');
+    if (!f.prioridad) faltan.push('prioridad');
+    if (f.informado !== true && f.informado !== false) faltan.push('si el estudiante fue informado');
+    if (!(f.descripcion || '').trim()) faltan.push('descripción breve');
+    if (faltan.length) return res(false, 'VALIDACION', 'No se guardó. Falta: ' + faltan.join(', ') + '.');
+    if (f.descripcion.length > 500) return res(false, 'VALIDACION', 'La descripción excede 500 caracteres (RNF-04).');
+    const folio = siguienteFolio(st);
+    st.canalizaciones.push({ folio, nc, tutor: u.id, instancia: f.instancia, prioridad: f.prioridad, fecha: FECHA_REF, estado: 'Registrada', motivo: f.motivo, informado: f.informado, descripcion: f.descripcion.trim(), fuente: 'Prueba' });
+    st.cambios.push({ id: st.cambios.length + 1, folio, origen: '—', destino: 'Registrada', usuario: u.id, fecha: ahora(), observacion: '', fuente: 'Prueba' });
+    bit(st, u, 'Registro de canalización', 'Canalizacion', folio);
+    return res(true, 'OK', `Canalización registrada con folio ${folio}, estado «Registrada».`, { folio });
+  }
+
+  // RF-03
+  function registrarNota(st, uid, nc, eje, texto) {
+    const u = usuario(uid);
+    const t = st.tutorados.find(x => x.nc === nc);
+    if (!t || u.rol !== 'tutor' || t.tutor !== u.id) return res(false, 'DENEGADO', 'Acceso denegado (RNF-02).');
+    if (!eje) return res(false, 'VALIDACION', 'No se guardó: seleccione el eje (RF-03).');
+    if (!(texto || '').trim()) return res(false, 'VALIDACION', 'No se guardó: escriba el contenido de la nota.');
+    if (texto.length > 1000) return res(false, 'VALIDACION', 'La nota admite hasta 1000 caracteres.');
+    const id = 'NOT-' + String(st.notas.length + 1).padStart(3, '0');
+    st.notas.push({ id, nc, eje, texto: texto.trim(), autor: u.id, fecha: ahora() });
+    bit(st, u, 'Registro de nota de seguimiento', 'NotaSeguimiento', id);
+    return res(true, 'OK', 'Nota guardada.');
+  }
+
+  // RF-04
+  function registrarSesion(st, uid, f) {
+    const u = usuario(uid);
+    if (u.rol !== 'tutor') return res(false, 'DENEGADO', 'Acceso denegado.');
+    const faltan = [];
+    if (!f.tipo) faltan.push('tipo');
+    if (!f.fecha) faltan.push('fecha');
+    if (!(f.tema || '').trim()) faltan.push('tema');
+    if (f.tipo === 'individual' && !(f.acuerdos || '').trim()) faltan.push('acuerdos (obligatorios en sesión individual)');
+    const asis = f.asistentes || [];
+    if (!asis.length) faltan.push('asistentes');
+    if (faltan.length) return res(false, 'VALIDACION', 'No se guardó. Falta: ' + faltan.join(', ') + '.');
+    if (f.tipo === 'individual' && asis.length !== 1) return res(false, 'VALIDACION', 'Una sesión individual tiene exactamente un asistente.');
+    if (asis.some(nc => (st.tutorados.find(t => t.nc === nc) || {}).tutor !== u.id)) return res(false, 'VALIDACION', 'Los asistentes deben ser del grupo del tutor.');
+    if ((f.tema || '').length > 150 || (f.acuerdos || '').length > 500) return res(false, 'VALIDACION', 'Tema hasta 150 y acuerdos hasta 500 caracteres.');
+    const n = st.sesiones.filter(s => s.tutor === u.id).length + 1;
+    const id = `SES-${u.id}-P${n}`;
+    st.sesiones.push({ id, tutor: u.id, grupo: u.grupo, fecha: f.fecha, tipo: f.tipo, asistentes: asis.length, lista: asis, tema: f.tema.trim(), acuerdos: (f.acuerdos || '').trim(), fuente: 'Prueba' });
+    bit(st, u, 'Registro de sesión', 'Sesion', id);
+    return res(true, 'OK', `Sesión ${id} registrada con ${asis.length} asistente(s).`);
+  }
+
+  function verExpediente(st, uid, nc) {
+    const u = usuario(uid);
+    const t = st.tutorados.find(x => x.nc === nc);
+    if (!t || u.rol !== 'tutor' || t.tutor !== u.id) return null;
+    bit(st, u, 'Consulta de expediente', 'Tutorado', nc);
+    return t;
+  }
+
+  // Días hábiles (lunes a viernes) en (desde, hasta]
+  function diasHabiles(desde, hasta) {
+    const a = new Date(desde.slice(0, 10) + 'T12:00:00Z'), b = new Date(hasta.slice(0, 10) + 'T12:00:00Z');
+    let n = 0;
+    for (let d = new Date(a.getTime() + 864e5); d <= b; d = new Date(d.getTime() + 864e5)) {
+      const w = d.getUTCDay(); if (w !== 0 && w !== 6) n++;
+    }
+    return n;
+  }
+
+  // Estado de un folio a una fecha, reconstruido desde CambioEstado
+  function estadoAl(st, folio, fecha) {
+    const cs = st.cambios.filter(c => c.folio === folio && c.fecha.slice(0, 10) <= fecha);
+    return cs.length ? { estado: cs[cs.length - 1].destino, ultimo: cs[cs.length - 1].fecha.slice(0, 10) } : null;
+  }
+
+  function historial(st, folio) { return st.cambios.filter(c => c.folio === folio); }
+
+  // RF-10, RN-07
+  function alertas(st, fecha = FECHA_REF, N = N_ALERTA) {
+    return st.canalizaciones.map(c => {
+      const e = estadoAl(st, c.folio, fecha);
+      if (!e || !['Registrada', 'Recibida'].includes(e.estado)) return null;
+      const dias = diasHabiles(e.ultimo, fecha);
+      return dias > N ? { folio: c.folio, tutor: c.tutor, instancia: c.instancia, estado: e.estado, ultimo: e.ultimo, dias } : null;
+    }).filter(Boolean);
+  }
+
+  // RF-11
+  function informe(st, tutor, corte = FECHA_REF) {
+    const u = usuario(tutor);
+    const ses = st.sesiones.filter(s => s.tutor === tutor && s.fecha <= corte);
+    const can = st.canalizaciones.filter(c => c.tutor === tutor && c.fecha <= corte);
+    const porEstado = {};
+    can.forEach(c => { const e = estadoAl(st, c.folio, corte); if (e) porEstado[e.estado] = (porEstado[e.estado] || 0) + 1; });
+    return {
+      tutor, grupo: u.grupo, corte,
+      tutorados: st.tutorados.filter(t => t.tutor === tutor).length,
+      grupales: ses.filter(s => s.tipo === 'grupal').length,
+      individuales: ses.filter(s => s.tipo === 'individual').length,
+      asistencias: ses.reduce((a, s) => a + (+s.asistentes || 0), 0),
+      notas: st.notas.filter(n => n.autor === tutor && n.fecha.slice(0, 10) <= corte).length,
+      canalizaciones: can.length, porEstado,
+      alertas: alertas(st, corte).filter(a => a.tutor === tutor).length,
+      sesiones: ses
+    };
+  }
+
+  // RN-05: vista de la coordinación (sin descripción, motivo ni número de control)
+  function vistaCoordinacion(st, fecha = FECHA_REF) {
+    return st.canalizaciones.map(c => {
+      const h = historial(st, c.folio); const ult = h[h.length - 1];
+      return { folio: c.folio, grupo: (usuario(c.tutor) || {}).grupo, instancia: c.instancia, prioridad: c.prioridad, fecha: c.fecha, estado: c.estado, ultimo: ult.fecha.slice(0, 10), dias: diasHabiles(ult.fecha, fecha) };
+    });
+  }
+
+  // RF-12 (tercer incremento): indicadores agregados por grupo
+  function tablero(st) {
+    const grupos = USUARIOS.filter(u => u.rol === 'tutor');
+    return grupos.map(g => {
+      const can = st.canalizaciones.filter(c => c.tutor === g.id);
+      const porEstado = {}; can.forEach(c => porEstado[c.estado] = (porEstado[c.estado] || 0) + 1);
+      const tiempos = can.map(c => {
+        const h = historial(st, c.folio); const reg = h.find(x => x.destino === 'Registrada'); const at = h.find(x => x.destino === 'Atendida');
+        return reg && at ? diasHabiles(reg.fecha, at.fecha) : null;
+      }).filter(x => x !== null);
+      return { grupo: g.grupo, tutor: g.id, porEstado, total: can.length, promedio: tiempos.length ? tiempos.reduce((a, b) => a + b, 0) / tiempos.length : null, nAtendidas: tiempos.length, sesiones: st.sesiones.filter(s => s.tutor === g.id).length };
+    });
+  }
+
+  return { FECHA_REF, N_ALERTA, ESTADOS, TRANSICIONES, USUARIOS, ROLES, INSTANCIAS, MOTIVOS, EJES, SIN_DATO,
+    semilla, usuario, puedeVerFolio, veDetalle, transicionesDisponibles, cambiarEstado, registrarCanalizacion,
+    registrarNota, registrarSesion, verExpediente, diasHabiles, estadoAl, historial, alertas, informe,
+    vistaCoordinacion, tablero };
+})();
+
+</script>
+<script>{
+const O = OHTLI;
+const KEY = 'ohtli-prototipo-p3-v1';
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = f => { const [y, m, d] = String(f).slice(0, 10).split('-'); return `${d}/${m}/${y}`; };
+const stc = e => `<span class="st st-${esc(e.split(' ')[0])}">${esc(e)}</span>`;
+const inc = (rf, i) => `<span class="chip inc-${i}">${esc(rf)} · ${i === 'Mínimo' ? 'incremento mínimo' : i.toLowerCase() + ' incremento'}</span>`;
+const $ = id => document.getElementById(id);
+
+let S, U = null, view = null, sel = null, flash = null, ultimo = Date.now();
+function cargar() {
+  try { const t = localStorage.getItem(KEY); if (t) { S = JSON.parse(t); return; } } catch (e) {}
+  S = O.semilla(DATA);
+}
+function guardar() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+cargar();
+
+const MENUS = {
+  tutor: [['tutorados', 'Tutorados'], ['sesiones', 'Sesiones'], ['canal', 'Canalizaciones'], ['informe', 'Informe'], ['notif', 'Notificaciones']],
+  apoyo: [['bandeja', 'Bandeja']],
+  jefatura: [['jef', 'Canalizaciones']],
+  coord: [['folios', 'Estado por folio'], ['alertas', 'Alertas'], ['tablero', 'Tablero']],
+  admin: [['bitacora', 'Bitácora'], ['catalogos', 'Catálogos'], ['yolia', 'Yolia']]
+};
+const u = () => O.usuario(U);
+function ir(v, s) { view = v; sel = s ?? null; render(); window.scrollTo(0, 0); }
+function msg(r) { flash = r; }
+function act(r) { msg(r); guardar(); render(); }
+
+function render() {
+  const app = $('app');
+  if (!U) { app.innerHTML = login(); return; }
+  const me = u(); const noLeidas = S.notificaciones.filter(n => n.para === me.id && !n.leida).length;
+  app.innerHTML = `
+  <header class="strip"><b>OHTLI</b><span>Prototipo navegable</span>
+    <span class="who">${esc(me.nombre)} · ${esc(O.ROLES[me.rol])}${me.instancia ? ' · ' + esc(me.instancia) : ''}</span>
+    <button data-a="salir">Salir</button></header>
+  <div class="note">Modelo navegable del diseño (P3), no el sistema construido. Datos sintéticos del Anexo E (semilla 20261118, prefijo SIN). Fecha simulada del sistema: ${fmt(O.FECHA_REF)}.</div>
+  <nav>${MENUS[me.rol].map(([k, t]) => `<button data-v="${k}" ${view === k || (view === 'exp' && k === 'tutorados') || (view === 'folio' && ['canal', 'bandeja', 'jef', 'folios'].includes(k)) ? 'aria-current="page"' : ''}>${t}${k === 'notif' && noLeidas ? ` (${noLeidas})` : ''}</button>`).join('')}</nav>
+  <main>${flash ? `<div class="flash ${flash.ok ? 'ok' : 'bad'}" role="status">${esc(flash.mensaje)}</div>` : ''}${vista()}</main>`;
+  flash = null;
+}
+
+function login() {
+  const grupos = ['tutor', 'apoyo', 'jefatura', 'coord', 'admin'];
+  return `<header class="strip"><b>OHTLI</b><span>Sistema Integral de Tutoría y Acompañamiento Estudiantil</span></header>
+  <main class="login">
+    <h1>Prototipo navegable</h1>
+    <p>Seguimiento tutorial y canalización del Instituto Tecnológico Superior de Coatzacoalcos (ITESCO), como complemento de SIGEA. Este prototipo materializa los modelos de diseño de P3 (casos de uso, clases, máquina de estados, actividad y secuencia) para validar en P4 los escenarios ESC-01 a ESC-08.</p>
+    <div class="zone mut">Datos sintéticos del Anexo E de P2 V4: 3 tutores, 120 tutorados, 27 sesiones, 15 canalizaciones y 42 cambios de estado. No corresponden a personas reales. Fecha simulada: ${fmt(O.FECHA_REF)}. Las cuentas no usan contraseña: el hash con sal y la expiración de sesión (RNF-01) pertenecen a la construcción; aquí la sesión se cierra tras 15 minutos sin actividad.</div>
+    <h2 style="margin-top:22px">Elija una cuenta de prueba</h2>
+    <div class="acc">${grupos.map(r => O.USUARIOS.filter(x => x.rol === r).map(x => `<button data-login="${x.id}"><b>${esc(x.nombre)}</b><small>${esc(O.ROLES[r])}${x.grupo ? ' · grupo ' + esc(x.grupo) : ''}${x.instancia ? ' · ' + esc(x.instancia) : ''}</small></button>`).join('')).join('')}</div>
+    <div class="row"><button data-a="reset">Restablecer datos sintéticos</button><span class="mut">Devuelve el prototipo al estado del Anexo E antes de cada corrida de pruebas.</span></div>
+    <details style="margin-top:22px"><summary><b>Escenarios de prueba (Anexo E)</b></summary>
+      <table class="stack" style="margin-top:10px"><thead><tr><th>ID</th><th>Escenario</th><th>Procedimiento</th><th>Resultado esperado</th><th>Incremento</th></tr></thead><tbody>
+      ${DATA.escenarios.map(e => `<tr><td>${esc(e.id)}</td><td>${esc(e.nombre)}</td><td>${esc(e.proc)}</td><td>${esc(e.esperado)}</td><td>${esc(e.inc)}</td></tr>`).join('')}</tbody></table></details>
+  </main>`;
+}
+
+function vista() {
+  const me = u();
+  switch (view) {
+    case 'tutorados': return vTutorados(me);
+    case 'exp': return vExpediente(me);
+    case 'sesiones': return vSesiones(me);
+    case 'canal': return vCanal(me);
+    case 'nueva': return vNueva(me);
+    case 'folio': return vFolio(me);
+    case 'informe': return vInforme(me);
+    case 'notif': return vNotif(me);
+    case 'bandeja': return vBandeja(me);
+    case 'jef': return vJef(me);
+    case 'folios': return vFolios(me);
+    case 'alertas': return vAlertas(me);
+    case 'tablero': return vTablero(me);
+    case 'bitacora': return vBitacora(me);
+    case 'catalogos': return vCatalogos(me);
+    case 'yolia': return vYolia(me);
+  }
+  return '';
+}
+
+/* ---------- Tutor ---------- */
+function vTutorados(me) {
+  const ts = S.tutorados.filter(t => t.tutor === me.id);
+  return `<div class="head"><h2>Tutorados del grupo ${esc(me.grupo)}</h2>${inc('RF-02', 'Mínimo')}</div>
+  <p class="mut">${ts.length} tutorados, ciclo vigente. Identificados por número de control (RN-06: los datos de la entrevista inicial se consultan en SIGEA; aquí se simulan, RES-01).</p>
+  <table class="stack"><thead><tr><th>Número de control</th><th class="n">Notas</th><th class="n">Canalizaciones</th><th>Última canalización</th></tr></thead><tbody>
+  ${ts.map(t => { const cs = S.canalizaciones.filter(c => c.nc === t.nc); return `<tr class="click" data-exp="${esc(t.nc)}"><td><a href="#" data-exp="${esc(t.nc)}">${esc(t.nc)}</a></td><td class="n">${S.notas.filter(n => n.nc === t.nc).length}</td><td class="n">${cs.length}</td><td>${cs.length ? stc(cs[cs.length - 1].estado) : ''}</td></tr>`; }).join('')}
+  </tbody></table>`;
+}
+
+function vExpediente(me) {
+  const t = S.tutorados.find(x => x.nc === sel);
+  if (!t || t.tutor !== me.id) return '<p>Acceso denegado (RNF-02).</p>';
+  const notas = S.notas.filter(n => n.nc === t.nc).slice().reverse();
+  const cs = S.canalizaciones.filter(c => c.nc === t.nc);
+  return `<div class="head"><button data-v="tutorados" class="noprint">← Tutorados</button><h2>Expediente ${esc(t.nc)}</h2>${inc('RF-03', 'Mínimo')}</div>
+  <div class="grid2">
+   <section class="panel"><h3>Nueva nota de seguimiento</h3>
+    <label for="eje">Eje</label><select id="eje"><option value="">Seleccione…</option>${O.EJES.map(e => `<option>${e}</option>`).join('')}</select>
+    <label for="ntexto">Contenido (sin diagnósticos clínicos)</label><textarea id="ntexto" maxlength="1000"></textarea>
+    <div class="row" style="margin-top:10px"><button class="pri" data-a="nota">Guardar nota</button><span class="mut">Fecha y autor se registran automáticamente.</span></div>
+   </section>
+   <section><h3>Historial de notas</h3>
+    ${notas.length ? notas.map(n => `<div class="zone" style="margin:8px 0"><div class="row mut">${esc(n.fecha)} · eje ${esc(n.eje)} · autor ${esc(n.autor)}</div><div>${esc(n.texto)}</div></div>`).join('') : '<p class="mut">Sin notas registradas. El Anexo E no incluye notas: se crean durante las pruebas.</p>'}
+    <h3 style="margin-top:18px">Canalizaciones</h3>
+    ${cs.length ? `<table class="stack"><tbody>${cs.map(c => `<tr class="click" data-folio="${c.folio}"><td>${c.folio}</td><td>${esc(c.instancia)}</td><td>${stc(c.estado)}</td></tr>`).join('')}</tbody></table>` : '<p class="mut">Ninguna.</p>'}
+    <button style="margin-top:10px" data-nueva="${esc(t.nc)}">Canalizar a este tutorado</button>
+   </section></div>`;
+}
+
+function vSesiones(me) {
+  const ss = S.sesiones.filter(s => s.tutor === me.id).slice().sort((a, b) => a.fecha < b.fecha ? 1 : -1);
+  const ts = S.tutorados.filter(t => t.tutor === me.id);
+  return `<div class="head"><h2>Sesiones de tutoría</h2>${inc('RF-04', 'Mínimo')}</div>
+  <div class="grid2">
+  <section class="panel"><h3>Registrar sesión</h3>
+   <label for="stipo">Tipo</label><select id="stipo"><option value="grupal">grupal</option><option value="individual">individual</option></select>
+   <label for="sfecha">Fecha</label><input id="sfecha" type="date" value="${O.FECHA_REF}" max="${O.FECHA_REF}">
+   <label for="stema">Tema</label><input id="stema" maxlength="150">
+   <label for="sacu">Acuerdos <span class="mut">(obligatorios en sesión individual)</span></label><textarea id="sacu" maxlength="500"></textarea>
+   <label>Asistentes</label><div class="row" style="margin-bottom:6px"><button data-a="todos">Marcar todos</button><button data-a="ninguno">Ninguno</button></div>
+   <div class="chk">${ts.map(t => `<label><input type="checkbox" name="asis" value="${esc(t.nc)}">${esc(t.nc)}</label>`).join('')}</div>
+   <div class="row" style="margin-top:12px"><button class="pri" data-a="sesion">Guardar sesión</button><span class="mut">Meta: registrar en 2 min o menos (RNF-05).</span></div>
+  </section>
+  <section><h3>${ss.length} sesiones</h3><table class="stack"><thead><tr><th>Fecha</th><th>Tipo</th><th>Tema</th><th class="n">Asistentes</th><th>Fuente</th></tr></thead><tbody>
+  ${ss.map(s => `<tr><td>${fmt(s.fecha)}</td><td>${esc(s.tipo)}</td><td>${esc(s.tema)}${s.acuerdos ? `<div class="mut">Acuerdos: ${esc(s.acuerdos)}</div>` : ''}</td><td class="n">${esc(s.asistentes)}</td><td>${esc(s.fuente)}</td></tr>`).join('')}
+  </tbody></table></section></div>`;
+}
+
+function tablaFolios(cs, conNc) {
+  return `<table class="stack"><thead><tr><th>Folio</th>${conNc ? '<th>Número de control</th>' : ''}<th>Instancia</th><th>Prioridad</th><th>Registro</th><th>Estado</th></tr></thead><tbody>
+  ${cs.map(c => `<tr class="click" data-folio="${c.folio}"><td><a href="#" data-folio="${c.folio}">${c.folio}</a></td>${conNc ? `<td>${esc(c.nc)}</td>` : ''}<td>${esc(c.instancia)}</td><td>${esc(c.prioridad)}</td><td>${fmt(c.fecha)}</td><td>${stc(c.estado)}</td></tr>`).join('')}</tbody></table>`;
+}
+
+function vCanal(me) {
+  const cs = S.canalizaciones.filter(c => c.tutor === me.id);
+  return `<div class="head"><h2>Mis canalizaciones</h2>${inc('RF-05 · RF-06', 'Mínimo')}<button class="pri" data-nueva="">Nueva canalización</button></div>
+  ${tablaFolios(cs, true)}`;
+}
+
+function vNueva(me) {
+  const ts = S.tutorados.filter(t => t.tutor === me.id);
+  return `<div class="head"><button data-v="canal">← Canalizaciones</button><h2>Nueva canalización</h2>${inc('RF-05', 'Mínimo')}</div>
+  <section class="panel" style="max-width:640px">
+   <label for="cnc">Número de control del tutorado</label><input id="cnc" list="misnc" value="${esc(sel || '')}" autocomplete="off" placeholder="SIN26…">
+   <datalist id="misnc">${ts.map(t => `<option value="${esc(t.nc)}">`).join('')}</datalist>
+   <label for="cmot">Motivo de detección</label><select id="cmot"><option value="">Seleccione…</option>${O.MOTIVOS.map(m => `<option>${m}</option>`).join('')}</select>
+   <label for="cins">Instancia de destino</label><select id="cins"><option value="">Seleccione…</option>${O.INSTANCIAS.map(m => `<option>${m}</option>`).join('')}</select>
+   <label for="cpri">Prioridad</label><select id="cpri"><option value="">Seleccione…</option><option>normal</option><option>prioritaria</option></select>
+   <label for="cinf">¿El estudiante fue informado de la canalización? (RN-09)</label><select id="cinf"><option value="">Seleccione…</option><option value="si">Sí</option><option value="no">No</option></select>
+   <label for="cdes">Descripción breve</label><textarea id="cdes" maxlength="600"></textarea>
+   <div class="mut" id="ccount">0 / 500</div>
+   <div class="zone mut" style="margin-top:8px">Aviso de minimización (RNF-04): describa solo lo necesario para la atención. No registre diagnósticos clínicos ni datos de salud.</div>
+   <div class="row" style="margin-top:12px"><button class="pri" data-a="canalizar">Registrar canalización</button><span class="mut">Meta: 3 min o menos (RNF-05).</span></div>
+  </section>`;
+}
+
+function vFolio(me) {
+  const c = S.canalizaciones.find(x => x.folio === sel);
+  if (!c || !O.puedeVerFolio(me, c)) return `<p>Acceso denegado: el folio no corresponde a su rol o instancia (RNF-02).</p>`;
+  const det = O.veDetalle(me, c);
+  const h = O.historial(S, c.folio);
+  const disp = O.TRANSICIONES.filter(t => t.o === c.estado && t.rol === me.rol);
+  const back = { tutor: 'canal', apoyo: 'bandeja', jefatura: 'jef', coord: 'folios' }[me.rol];
+  return `<div class="head"><button data-v="${back}">← Volver</button><h2>${c.folio}</h2>${stc(c.estado)}${inc('RF-06 · Tabla VI', 'Mínimo')}</div>
+  <div class="grid2">
+  <section class="panel"><dl class="kv">
+    <dt>Grupo</dt><dd>${esc((O.usuario(c.tutor) || {}).grupo)} (tutor ${esc(c.tutor)})</dd>
+    <dt>Instancia</dt><dd>${esc(c.instancia)}</dd><dt>Prioridad</dt><dd>${esc(c.prioridad)}</dd><dt>Registro</dt><dd>${fmt(c.fecha)}</dd>
+    ${det ? `<dt>Número de control</dt><dd>${esc(c.nc)}</dd>
+    <dt>Motivo</dt><dd>${esc(c.motivo || O.SIN_DATO)}</dd>
+    <dt>Informado</dt><dd>${c.informado === null || c.informado === undefined ? esc(O.SIN_DATO) : c.informado ? 'Sí' : 'No'}</dd>
+    <dt>Descripción</dt><dd>${esc(c.descripcion)}</dd>` : ''}
+  </dl>${det ? '' : '<p class="mut">Detalle confidencial (número de control, motivo y descripción) visible solo para el tutor y la instancia de destino (RN-05).</p>'}
+  ${c.fuente === 'Anexo E' && det ? '<p class="mut">Motivo e informado no forman parte del Anexo E; la descripción es un marcador sintético.</p>' : ''}
+  </section>
+  <section class="panel"><h3>Acciones</h3>
+   ${disp.length ? `<label for="fobs">Observación (opcional, sin diagnósticos)</label><textarea id="fobs" maxlength="300"></textarea>
+     ${disp.some(t => t.motivo) ? '<label for="fmot">Motivo de cierre (RN-04)</label><input id="fmot">' : ''}
+     <div class="row" style="margin-top:10px">${disp.map(t => `<button ${t.inc === 'Mínimo' ? 'class="pri"' : ''} data-tr="${esc(t.d)}">${esc(t.accion)}${t.inc !== 'Mínimo' ? ' (2.º incremento)' : ''}</button>`).join('')}</div>`
+     : '<p class="mut">Su rol no tiene transiciones disponibles desde este estado.</p>'}
+   ${me.rol === 'apoyo' ? '<p class="mut">Estados que registra el área: supuesto SUP-02, por validar con el área.</p>' : ''}
+   <details style="margin-top:14px"><summary class="mut">Solicitar otra transición (para pruebas de rechazo, ESC-03 y ESC-04)</summary>
+     <div class="row" style="margin-top:8px"><select id="fdest" style="max-width:220px">${O.ESTADOS.filter(e => e !== c.estado).map(e => `<option>${e}</option>`).join('')}</select><button data-a="trlibre">Solicitar</button></div></details>
+  </section></div>
+  <h3 style="margin-top:20px">Historial (${h.length} cambios)</h3>
+  <table class="stack"><thead><tr><th>Fecha</th><th>Origen</th><th>Destino</th><th>Usuario</th><th>Observación</th><th>Fuente</th></tr></thead><tbody>
+  ${h.map(x => `<tr><td>${esc(x.fecha)}</td><td>${esc(x.origen)}</td><td>${stc(x.destino)}</td><td>${esc(x.usuario)}</td><td>${det ? esc(x.observacion) : x.observacion ? '<span class="mut">Restringida (RN-05)</span>' : ''}</td><td>${esc(x.fuente)}</td></tr>`).join('')}
+  </tbody></table>`;
+}
+
+function vInforme(me) {
+  const corte = sel || O.FECHA_REF;
+  const r = O.informe(S, me.id, corte);
+  const pe = Object.entries(r.porEstado);
+  return `<div class="head"><h2>Informe periódico del tutor</h2>${inc('RF-11', 'Mínimo')}</div>
+  <div class="row noprint"><label for="icorte" style="margin:0">Fecha de corte</label><input id="icorte" type="date" value="${corte}" style="max-width:190px"><button data-a="corte">Generar</button></div>
+  <p class="mut">Cortes institucionales en las semanas 5, 9, 13 y 16 (E1). Los conteos se calculan con los registros hasta la fecha de corte; el estado de cada canalización se reconstruye con su historial.</p>
+  <section class="panel">
+   <h3>Tutor ${esc(r.tutor)} · grupo ${esc(r.grupo)} · corte ${fmt(r.corte)}</h3>
+   <div class="grid2" style="margin-top:12px">
+    <div><div class="big">${r.tutorados}</div><div class="mut">tutorados</div></div>
+    <div><div class="big">${r.grupales} + ${r.individuales}</div><div class="mut">sesiones grupales + individuales</div></div>
+    <div><div class="big">${r.canalizaciones}</div><div class="mut">canalizaciones registradas</div></div>
+    <div><div class="big">${r.notas}</div><div class="mut">notas de seguimiento</div></div>
+   </div>
+   <h3 style="margin-top:16px">Canalizaciones por estado al corte</h3>
+   ${pe.length ? `<table><tbody>${pe.sort().map(([k, v]) => `<tr><td>${stc(k)}</td><td class="n">${v}</td></tr>`).join('')}</tbody></table>` : '<p class="mut">Ninguna.</p>'}
+   <p class="mut">Alertas vigentes al corte (RF-10, 2.º incremento): ${r.alertas}</p>
+  </section>
+  <p class="mut noprint">La exportación a PDF (RF-11) corresponde al sistema construido: el visor de este prototipo no permite imprimir ni descargar. Use «Copiar informe» para llevar el texto a otro documento.</p>
+  <button class="noprint" data-a="copiar">Copiar informe</button>`;
+}
+
+function vNotif(me) {
+  const ns = S.notificaciones.filter(n => n.para === me.id).slice().reverse();
+  return `<div class="head"><h2>Notificaciones</h2>${inc('RF-09', 'Segundo')}</div>
+  ${ns.length ? `<table class="stack"><thead><tr><th>Fecha</th><th>Folio</th><th>Nuevo estado</th><th></th></tr></thead><tbody>${ns.map(n => `<tr><td>${esc(n.fecha)}</td><td><a href="#" data-folio="${n.folio}">${n.folio}</a></td><td>${stc(n.estado)}</td><td>${n.leida ? 'leída' : '<b>no leída</b>'}</td></tr>`).join('')}</tbody></table><button data-a="leer" style="margin-top:10px">Marcar todas como leídas</button>` : '<p class="mut">Sin notificaciones. Se generan cuando el área de apoyo cambia el estado de una de sus canalizaciones.</p>'}`;
+}
+
+/* ---------- Área de apoyo ---------- */
+function vBandeja(me) {
+  const todas = sel === 'todas';
+  const cs = S.canalizaciones.filter(c => c.instancia === me.instancia && (todas || c.estado !== 'Cerrada'));
+  return `<div class="head"><h2>Bandeja · ${esc(me.instancia)}</h2>${inc('RF-07', 'Mínimo')}</div>
+  <div class="zone mut" style="margin-bottom:12px">Vista adaptable para teléfono (RNF-09, segundo incremento): sujeta a validación con el área (supuesto SUP-01).</div>
+  <div class="row" style="margin-bottom:12px"><button data-band="" ${!todas ? 'aria-pressed="true" class="pri"' : ''}>Abiertas</button><button data-band="todas" ${todas ? 'aria-pressed="true" class="pri"' : ''}>Todas</button></div>
+  <div class="cards">${cs.map(c => { const h = O.historial(S, c.folio); const d = O.diasHabiles(h[h.length - 1].fecha, O.FECHA_REF); return `<button class="card" data-folio="${c.folio}"><div class="top"><b>${c.folio}</b>${stc(c.estado)}</div><div>${esc(c.nc)} · prioridad ${esc(c.prioridad)}</div><div class="mut">Registro ${fmt(c.fecha)} · ${d} días hábiles en el estado actual</div></button>`; }).join('') || '<p class="mut">Sin canalizaciones.</p>'}</div>`;
+}
+
+/* ---------- Jefatura ---------- */
+function vJef(me) {
+  return `<div class="head"><h2>Canalizaciones de la carrera</h2>${inc('RF-08', 'Segundo')}</div>
+  <p class="mut">La jefatura escala una canalización a la coordinación (RN-03). Esta función pertenece al segundo incremento: la transición está especificada en la Tabla VI y el prototipo la rechaza con ese aviso.</p>
+  ${tablaFolios(S.canalizaciones, false)}`;
+}
+
+/* ---------- Coordinación ---------- */
+function vFolios(me) {
+  const v = O.vistaCoordinacion(S);
+  return `<div class="head"><h2>Estado por folio</h2>${inc('RN-05 · RNF-02', 'Mínimo')}</div>
+  <p class="mut">La coordinación ve estado y tiempos de cada canalización, sin número de control, motivo ni descripción.</p>
+  <table class="stack"><thead><tr><th>Folio</th><th>Grupo</th><th>Instancia</th><th>Prioridad</th><th>Registro</th><th>Estado</th><th>Último cambio</th><th class="n">Días hábiles</th></tr></thead><tbody>
+  ${v.map(x => `<tr class="click" data-folio="${x.folio}"><td>${x.folio}</td><td>${esc(x.grupo)}</td><td>${esc(x.instancia)}</td><td>${esc(x.prioridad)}</td><td>${fmt(x.fecha)}</td><td>${stc(x.estado)}</td><td>${fmt(x.ultimo)}</td><td class="n">${x.dias}</td></tr>`).join('')}</tbody></table>`;
+}
+
+function vAlertas(me) {
+  const [f, n] = (sel || `${O.FECHA_REF}|${O.N_ALERTA}`).split('|');
+  const al = O.alertas(S, f, +n);
+  return `<div class="head"><h2>Alertas por falta de atención</h2>${inc('RF-10 · RN-07', 'Segundo')}</div>
+  <div class="row"><label for="afecha" style="margin:0">Al</label><input id="afecha" type="date" value="${f}" style="max-width:180px"><label for="an" style="margin:0">N días hábiles</label><input id="an" type="number" min="1" value="${n}" style="max-width:90px"><button data-a="alertas">Calcular</button></div>
+  <p class="mut">Se alerta cuando una canalización permanece en «Registrada» o «Recibida» más de N días hábiles (lunes a viernes).</p>
+  <div class="big" style="margin:12px 0 6px">${al.length}</div><div class="mut" style="margin-bottom:12px">alertas</div>
+  ${al.length ? `<table class="stack"><thead><tr><th>Folio</th><th>Instancia</th><th>Estado</th><th>Último cambio</th><th class="n">Días hábiles</th></tr></thead><tbody>${al.map(a => `<tr><td>${a.folio}</td><td>${esc(a.instancia)}</td><td>${stc(a.estado)}</td><td>${fmt(a.ultimo)}</td><td class="n">${a.dias}</td></tr>`).join('')}</tbody></table>` : ''}`;
+}
+
+function vTablero(me) {
+  const t = O.tablero(S); const max = Math.max(1, ...t.map(x => x.total));
+  return `<div class="head"><h2>Tablero por grupo</h2>${inc('RF-12', 'Tercero')}</div>
+  <p class="mut">Indicadores agregados definidos en RF-12. Función del tercer incremento, mostrada para validar el diseño; sin descripción de ningún caso (RN-05).</p>
+  <table class="stack"><thead><tr><th>Grupo</th><th>Canalizaciones</th><th>Por estado</th><th class="n">Días promedio a «Atendida»</th><th class="n">Sesiones</th></tr></thead><tbody>
+  ${t.map(x => `<tr><td>${esc(x.grupo)}</td><td><div class="row"><div class="bar" style="width:${Math.round(100 * x.total / max)}px"></div>${x.total}</div></td><td>${Object.entries(x.porEstado).map(([k, v]) => `${esc(k)}: ${v}`).join(', ')}</td><td class="n">${x.promedio === null ? '—' : x.promedio.toFixed(1) + ` (n=${x.nAtendidas})`}</td><td class="n">${x.sesiones}</td></tr>`).join('')}</tbody></table>`;
+}
+
+/* ---------- Administrador ---------- */
+function vBitacora(me) {
+  const b = S.bitacora.slice().reverse();
+  return `<div class="head"><h2>Bitácora de auditoría</h2>${inc('RF-13', 'Mínimo')}</div>
+  <p class="mut">Solo inserción. Registra accesos al expediente, cambios en notas, sesiones y canalizaciones e intentos denegados durante la sesión de prueba. El historial sintético de estados está en cada folio (CambioEstado).</p>
+  <p><b>${b.length}</b> registros</p>
+  ${b.length ? `<table class="stack"><thead><tr><th class="n">#</th><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Entidad</th><th>Registro</th></tr></thead><tbody>${b.map(x => `<tr><td class="n">${x.id}</td><td>${esc(x.fecha)}</td><td>${esc(x.usuario)}</td><td>${esc(x.accion)}</td><td>${esc(x.entidad)}</td><td>${esc(x.registro)}</td></tr>`).join('')}</tbody></table>` : ''}`;
+}
+
+function vCatalogos(me) {
+  return `<div class="head"><h2>Catálogos y asignación</h2>${inc('RF-14', 'Segundo')}</div>
+  <p class="mut">Consulta de solo lectura. La administración de catálogos pertenece al segundo incremento.</p>
+  <div class="grid2">
+   <section class="panel"><h3>Asignación tutor-grupo (RN-01, RN-02)</h3><table><tbody>${O.USUARIOS.filter(x => x.rol === 'tutor').map(x => `<tr><td>${x.id}</td><td>${esc(x.grupo)}</td><td class="n">${S.tutorados.filter(t => t.tutor === x.id).length} tutorados</td></tr>`).join('')}</tbody></table></section>
+   <section class="panel"><h3>Instancias de apoyo</h3><p>${O.INSTANCIAS.join(' · ')}</p><h3>Motivos de detección</h3><p>${O.MOTIVOS.join(' · ')}</p><h3>Ejes</h3><p>${O.EJES.join(' · ')}</p></section>
+  </div>
+  <h3 style="margin-top:20px">Transiciones permitidas (Tabla VI)</h3>
+  <table class="stack"><thead><tr><th>Origen</th><th>Destino</th><th>Quién</th><th>Incremento</th></tr></thead><tbody>${O.TRANSICIONES.map(t => `<tr><td>${t.o}</td><td>${t.d}</td><td>${O.ROLES[t.rol]}${t.motivo ? ' (con motivo)' : ''}</td><td>${t.inc}</td></tr>`).join('')}</tbody></table>`;
+}
+
+function vYolia(me) {
+  return `<div class="head"><h2>Módulo experimental Yolia</h2>${inc('RF-15 · RNF-08', 'Segundo')}</div>
+  <section class="panel" style="max-width:640px"><p><b>Estado: desactivado.</b></p>
+  <p>Yolia se integra como módulo desacoplado detrás de una interfaz (RNF-08) y solo el administrador puede activarlo en modo prueba, con datos sintéticos. Sus resultados nunca generan canalizaciones ni se muestran a la coordinación (RN-08). Sus reglas no han sido validadas por especialistas, por lo que no aparece en ningún otro menú.</p>
+  <p class="mut">La activación y la regresión de los 6 perfiles corresponden al segundo incremento.</p></section>`;
+}
+
+/* ---------- Eventos ---------- */
+document.addEventListener('click', e => {
+  ultimo = Date.now();
+  const b = e.target.closest('[data-login],[data-a],[data-v],[data-exp],[data-folio],[data-nueva],[data-tr],[data-band]');
+  if (!b) return;
+  if (b.tagName === 'A') e.preventDefault();
+  const d = b.dataset;
+  if (d.login) { U = d.login; const r = O.usuario(U).rol; ir(MENUS[r][0][0]); return; }
+  if (d.v) { ir(d.v); return; }
+  if (d.exp) { if (O.verExpediente(S, U, d.exp)) { guardar(); ir('exp', d.exp); } return; }
+  if (d.folio) { ir('folio', d.folio); return; }
+  if (d.nueva !== undefined) { ir('nueva', d.nueva); return; }
+  if (d.band !== undefined) { ir('bandeja', d.band); return; }
+  if (d.tr) { act(O.cambiarEstado(S, U, sel, d.tr, $('fobs')?.value || '', $('fmot')?.value || '')); return; }
+  switch (d.a) {
+    case 'salir': U = null; view = null; render(); break;
+    case 'reset': S = O.semilla(DATA); guardar(); render(); break;
+    case 'nota': { const r = O.registrarNota(S, U, sel, $('eje').value, $('ntexto').value); act(r); break; }
+    case 'todos': document.querySelectorAll('[name=asis]').forEach(x => x.checked = true); break;
+    case 'ninguno': document.querySelectorAll('[name=asis]').forEach(x => x.checked = false); break;
+    case 'sesion': {
+      const r = O.registrarSesion(S, U, { tipo: $('stipo').value, fecha: $('sfecha').value, tema: $('stema').value, acuerdos: $('sacu').value, asistentes: [...document.querySelectorAll('[name=asis]:checked')].map(x => x.value) });
+      act(r); break;
+    }
+    case 'canalizar': {
+      const inf = $('cinf').value;
+      const r = O.registrarCanalizacion(S, U, { nc: $('cnc').value, motivo: $('cmot').value, instancia: $('cins').value, prioridad: $('cpri').value, informado: inf === 'si' ? true : inf === 'no' ? false : null, descripcion: $('cdes').value });
+      if (r.ok) { guardar(); msg(r); ir('folio', r.folio); } else { const keep = ['cnc', 'cmot', 'cins', 'cpri', 'cinf', 'cdes'].map(k => $(k).value); act(r); ['cnc', 'cmot', 'cins', 'cpri', 'cinf', 'cdes'].forEach((k, i) => $(k).value = keep[i]); }
+      break;
+    }
+    case 'trlibre': act(O.cambiarEstado(S, U, sel, $('fdest').value, $('fobs')?.value || '', $('fmot')?.value || '')); break;
+    case 'corte': ir('informe', $('icorte').value || O.FECHA_REF); break;
+    case 'alertas': ir('alertas', `${$('afecha').value || O.FECHA_REF}|${Math.max(1, +$('an').value || O.N_ALERTA)}`); break;
+    case 'leer': S.notificaciones.forEach(n => { if (n.para === U) n.leida = true; }); guardar(); render(); break;
+    case 'copiar': {
+      const r = O.informe(S, U, sel || O.FECHA_REF);
+      const txt = `Informe del tutor ${r.tutor}, grupo ${r.grupo}, corte ${fmt(r.corte)}\nTutorados: ${r.tutorados}\nSesiones grupales: ${r.grupales}\nSesiones individuales: ${r.individuales}\nNotas: ${r.notas}\nCanalizaciones: ${r.canalizaciones}\n` + Object.entries(r.porEstado).map(([k, v]) => `  ${k}: ${v}`).join('\n') + `\nAlertas: ${r.alertas}\n(Datos sintéticos, Anexo E)`;
+      navigator.clipboard.writeText(txt).then(() => { b.textContent = 'Copiado'; }, () => { b.textContent = 'No se pudo copiar'; });
+      break;
+    }
+  }
+});
+document.addEventListener('input', e => {
+  ultimo = Date.now();
+  if (e.target.id === 'cdes') { const n = e.target.value.length; const c = $('ccount'); c.textContent = `${n} / 500`; c.style.color = n > 500 ? 'var(--bad)' : ''; }
+});
+setInterval(() => { if (U && Date.now() - ultimo > 15 * 60 * 1000) { U = null; view = null; flash = null; render(); } }, 30000);
+render();
+}
+</script>
+</body>
+</html>

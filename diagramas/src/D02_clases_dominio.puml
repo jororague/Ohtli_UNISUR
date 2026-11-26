@@ -1,0 +1,211 @@
+@startuml D02_clases_dominio
+' OHTLI · P3 · D02 Diagrama de clases del dominio
+' Fuente: P2 V4, Anexo D (diccionario de datos), RF-01 a RF-15, RN-01 a RN-09
+' Las clases y atributos marcados {P3} no están en el Anexo D: son refinamientos de diseño
+' que exigen requerimientos de P2 (se registran en el control de cambios de P3).
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam classAttributeIconSize 0
+hide empty methods
+
+enum Rol {
+  tutor
+  jefatura_carrera
+  coord_tutoria
+  apoyo
+  admin
+}
+
+enum Eje {
+  academico
+  personal
+  profesional
+}
+
+enum TipoSesion {
+  grupal
+  individual
+}
+
+enum MotivoDeteccion {
+  inasistencia
+  bajo_rendimiento
+  conducta
+  solicitud_estudiante
+}
+
+enum Prioridad {
+  normal
+  prioritaria
+}
+
+enum EstadoCanalizacion {
+  Registrada
+  Recibida
+  EnAtencion
+  NoAsistio
+  Atendida
+  Escalada
+  Cerrada
+}
+
+class Usuario {
+  - id_usuario : Entero
+  - nombre : Texto(120)
+  - correo : Texto(120) {único}
+  - hash_contrasena : Texto(255)
+  - rol : Rol
+  - id_instancia : Entero [0..1] {P3}
+}
+
+class Grupo {
+  - id_grupo : Entero
+  - clave : Texto(10) {P3}
+  - carrera : Texto(10) {P3}
+  - ciclo : Texto(10)
+  - semestre : Entero {1..3}
+}
+
+class Tutorado {
+  - numero_control : Texto(10)
+}
+
+class NotaSeguimiento {
+  - id_nota : Entero
+  - fecha : FechaHora
+  - eje : Eje
+  - texto : Texto(1000) «sensible»
+}
+
+class Sesion {
+  - id_sesion : Entero
+  - tipo : TipoSesion
+  - fecha : Fecha
+  - tema : Texto(150)
+  - acuerdos : Texto(500) «sensible»
+}
+
+class Canalizacion {
+  - folio : Texto(12) «CAN-AAAA-NNNN»
+  - fecha_registro : FechaHora
+  - motivo_deteccion : MotivoDeteccion «sensible»
+  - estudiante_informado : Booleano
+  - prioridad : Prioridad
+  - descripcion : Texto(500) «sensible»
+  - estado : EstadoCanalizacion
+  + cambiarEstado(destino, usuario, observacion)
+  + diasHabilesSinCambio(fecha) : Entero
+}
+
+class CambioEstado {
+  - id_cambio : Entero
+  - estado_origen : EstadoCanalizacion
+  - estado_destino : EstadoCanalizacion
+  - fecha : FechaHora
+  - observacion : Texto(300) «sensible»
+}
+
+class InstanciaApoyo {
+  - id_instancia : Entero
+  - nombre : Texto(80)
+  - tipo : Texto
+}
+
+class Alerta {
+  - id_alerta : Entero
+  - fecha : Fecha
+  - atendida : Booleano
+}
+
+class Notificacion {
+  - id_notificacion : Entero {P3}
+  - estado_nuevo : EstadoCanalizacion
+  - fecha : FechaHora
+  - leida : Booleano
+}
+
+class Bitacora {
+  - id : Entero
+  - fecha_hora : FechaHora
+  - accion : Texto
+  - entidad : Texto
+  - id_registro : Texto
+}
+
+class RegistroYolia {
+  - id : Entero
+  - numero_control_sintetico : Texto
+  - nivel : Entero {0..4}
+  - cf : Real {0..1}
+  - reglas : Texto
+  - fecha : Fecha
+}
+
+interface ConsultaSIGEA <<interfaz>> {
+  + tutoradosDeGrupo(clave, ciclo) : Tutorado[*]
+  + existeNumeroControl(numero) : Booleano
+}
+
+interface MotorYolia <<interfaz>> {
+  + evaluar(perfil) : RegistroYolia
+}
+
+' --- Asociaciones (multiplicidades derivadas del Anexo D y de las RN) ---
+Usuario "1" -- "0..*" Grupo : tutor de >
+note on link
+  RN-01: solo profesores de tiempo completo
+  RN-02: un tutor por grupo y ciclo
+end note
+Grupo "1" *-- "0..*" Tutorado : integra >
+Tutorado "1" -- "0..*" NotaSeguimiento : tiene >
+Usuario "1" -- "0..*" NotaSeguimiento : autor >
+Usuario "1" -- "0..*" Sesion : conduce >
+Grupo "1" -- "0..*" Sesion : se imparte a >
+Sesion "0..*" -- "0..*" Tutorado : asistentes >
+Tutorado "1" -- "0..*" Canalizacion : es canalizado en >
+Usuario "1" -- "0..*" Canalizacion : registra >
+InstanciaApoyo "1" -- "0..*" Canalizacion : destino de >
+Usuario "0..*" -- "0..1" InstanciaApoyo : pertenece a >
+Canalizacion "1" *-- "1..*" CambioEstado : historial >
+Usuario "1" -- "0..*" CambioEstado : realiza >
+Canalizacion "1" -- "0..*" Alerta : genera >
+Canalizacion "1" -- "0..*" Notificacion : origina >
+Usuario "1" -- "0..*" Notificacion : destinatario >
+Usuario "1" -- "0..*" Bitacora : actor de >
+MotorYolia ..> RegistroYolia : produce
+Tutorado ..> ConsultaSIGEA : se obtiene de
+
+note right of Canalizacion
+  Invariantes:
+  - Solo el tutor del estudiante la registra (RN-03)
+  - estudiante_informado obligatorio (RN-09)
+  - descripcion ≤ 500 sin diagnóstico (RNF-04)
+  - estado solo cambia según Tabla VI (RF-06)
+  - Cerrada exige atención o motivo (RN-04)
+  - La coordinación no ve descripcion ni
+    numero_control (RN-05)
+end note
+
+note bottom of Bitacora
+  Solo inserción. Registra todo acceso al
+  expediente y todo cambio en notas, sesiones
+  y canalizaciones (RF-13).
+end note
+
+note bottom of RegistroYolia
+  Solo datos sintéticos (RES-02).
+  Sin asociación con Canalizacion (RN-08).
+end note
+
+note top of Usuario
+  {P3} id_instancia: obligatorio si rol = apoyo;
+  permite que el área vea solo sus
+  canalizaciones (RF-07, RNF-02).
+end note
+
+note top of Notificacion
+  {P3} Entidad nueva que exige RF-09
+  (no figura en el Anexo D).
+end note
+@enduml

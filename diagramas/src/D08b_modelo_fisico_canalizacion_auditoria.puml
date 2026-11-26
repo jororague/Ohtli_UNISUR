@@ -1,0 +1,161 @@
+@startuml D08b_modelo_fisico_canalizacion_auditoria
+' OHTLI · P3 · D08b Modelo físico (parte 2 de 2): canalización, auditoría y esquema yolia
+' Fuente: D08_modelo_fisico.puml (modelo completo, que se conserva como referencia en el repositorio)
+' Notación: * = NOT NULL; PK = llave primaria; FK = llave foránea; UQ = única.
+' Clasificación del dato (Anexo D): «I» identificativo, «II» identificativo indirecto, «S» sensible.
+' Las tablas en gris se definen en D08a; aquí solo se muestra su llave.
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #2F5597
+  HeaderBackgroundColor #DDEBF7
+  BackgroundColor<<D08a>> #F2F2F2
+  BorderColor<<D08a>> #7F7F7F
+  HeaderBackgroundColor<<D08a>> #E7E6E6
+  BackgroundColor<<Segundo>> #FFFDF3
+  BorderColor<<Segundo>> #BF9000
+}
+hide circle
+hide empty methods
+hide stereotype
+
+package "Tablas de D08a (referencia)" {
+  entity usuario <<D08a>> {
+    * id_usuario : integer <<PK>>
+  }
+  entity tutorado <<D08a>> {
+    * numero_control : varchar(10) <<PK>>
+  }
+  entity instancia_apoyo <<D08a>> {
+    * id_instancia : integer <<PK>>
+  }
+  entity motivo_deteccion <<D08a>> {
+    * clave : varchar(30) <<PK>>
+  }
+}
+
+package "Canalización (RF-05 a RF-10)" {
+  entity canalizacion {
+    * folio : varchar(13) <<PK>>
+    --
+    * numero_control : varchar(10) <<FK>>  «I»
+    * id_tutor : integer <<FK>>  «II»
+    * id_instancia : integer <<FK>>
+    * clave_motivo : varchar(30) <<FK>>  «S»
+    * estudiante_informado : boolean
+    * prioridad : prioridad_canalizacion
+    * descripcion : varchar(500)  «S»
+    * estado : estado_canalizacion
+    * fecha_registro : timestamptz
+  }
+  entity cambio_estado {
+    * id_cambio : bigint <<PK>>
+    --
+    * folio : varchar(13) <<FK>>
+    estado_origen : estado_canalizacion
+    * estado_destino : estado_canalizacion
+    * id_usuario : integer <<FK>>  «II»
+    * fecha : timestamptz
+    observacion : varchar(300)  «S»
+  }
+  entity transicion_permitida {
+    * estado_origen : estado_canalizacion <<PK>>
+    * estado_destino : estado_canalizacion <<PK>>
+    * rol_requerido : rol_usuario <<PK>>
+    --
+    * requiere_observacion : boolean
+    * incremento : varchar(8)
+    * activa : boolean
+  }
+  entity folio_contador {
+    * anio : smallint <<PK>>
+    --
+    * ultimo : integer
+  }
+  entity alerta <<Segundo>> {
+    * id_alerta : integer <<PK>>
+    --
+    * folio : varchar(13) <<FK>>
+    * fecha : date
+    * dias_habiles : smallint
+    * atendida : boolean
+  }
+  entity notificacion <<Segundo>> {
+    * id_notificacion : integer <<PK>>
+    --
+    * id_destinatario : integer <<FK>>  «II»
+    * folio : varchar(13) <<FK>>
+    * id_cambio : bigint <<FK, UQ>>
+    * estado_nuevo : estado_canalizacion
+    * fecha : timestamptz
+    * leida : boolean
+  }
+}
+
+package "Auditoría (RF-13)" {
+  entity bitacora {
+    * id : bigint <<PK>>
+    --
+    * fecha_hora : timestamptz
+    id_usuario : integer <<FK>>  «II»
+    * rol_bd : varchar(20)
+    * accion : varchar(40)
+    * entidad : varchar(40)
+    * id_registro : varchar(40)
+    * resultado : varchar(10)
+  }
+}
+
+package "Esquema yolia (ADR-05)" {
+  entity "yolia.registro" as yolia_registro <<Segundo>> {
+    * id : integer <<PK>>
+    --
+    * numero_control_sintetico : varchar(10)
+    * nivel : smallint
+    * cf : numeric(3,2)
+    * reglas : text
+    * fecha : date
+  }
+}
+
+tutorado ||--o{ canalizacion
+usuario ||--o{ canalizacion : registra
+instancia_apoyo ||--o{ canalizacion : destino
+motivo_deteccion ||--o{ canalizacion
+canalizacion ||--|{ cambio_estado : historial
+usuario ||--o{ cambio_estado : realiza
+canalizacion ||--o{ alerta
+canalizacion ||--o{ notificacion
+cambio_estado ||--o| notificacion
+usuario ||--o{ notificacion : destinatario
+usuario |o--o{ bitacora : actor
+
+note right of transicion_permitida
+  Las 11 filas de la Tabla VI de P2:
+  8 activas (incremento mínimo) y
+  3 de «Escalada» inactivas (ADR-03).
+end note
+
+note bottom of bitacora
+  Solo inserción (ADR-04): triggers
+  para cambios, aplicación para accesos.
+end note
+
+note bottom of yolia_registro
+  Sin llaves hacia el esquema ohtli
+  (RN-08); solo prefijo SIN (RES-02).
+end note
+
+legend right
+  Tipos enumerados: estado_canalizacion (Registrada, Recibida,
+  En atención, No asistió, Atendida, Escalada, Cerrada) y
+  prioridad_canalizacion (normal, prioritaria).
+  El estado solo cambia con fn_cambiar_estado; el registro, con
+  fn_registrar_canalizacion. Reglas, vistas y privilegios: Tablas VIII
+  y IX de P3. Amarillo: segundo incremento.
+endlegend
+@enduml

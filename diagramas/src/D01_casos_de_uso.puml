@@ -1,0 +1,120 @@
+@startuml D01_casos_de_uso
+' OHTLI · P3 · D01 Diagrama de casos de uso
+' Fuente: P2 V4, Tabla de RF (RF-01 a RF-15), RN-01 a RN-09, matriz de trazabilidad (incremento)
+' Convención: «Mínimo» = se implementa y prueba en P4; «Segundo» y «Tercero» = incrementos posteriores
+
+left to right direction
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam usecase {
+  BackgroundColor<<Mínimo>> #DDEBF7
+  BorderColor<<Mínimo>> #2F5597
+  BackgroundColor<<Segundo>> #FFF2CC
+  BorderColor<<Segundo>> #BF9000
+  BackgroundColor<<Tercero>> #EDEDED
+  BorderColor<<Tercero>> #7F7F7F
+}
+
+actor "Tutor" as TUT
+actor "Área de apoyo\n(psicología u otra instancia)" as APO
+actor "Jefatura de carrera" as JEF
+actor "Coordinación de tutoría" as COO
+actor "Administrador" as ADM
+actor "Reloj del sistema" as RELOJ <<sistema>>
+actor "SIGEA" as SIGEA <<sistema externo>>
+
+rectangle "OHTLI" {
+  usecase "Iniciar sesión con rol\n(RF-01)" as UC01 <<Mínimo>>
+
+  package "Seguimiento del tutorado" {
+    usecase "Consultar tutorados del grupo\n(RF-02)" as UC02 <<Mínimo>>
+    usecase "Registrar nota de seguimiento\n(RF-03)" as UC03 <<Mínimo>>
+    usecase "Registrar sesión de tutoría\n(RF-04)" as UC04 <<Mínimo>>
+    usecase "Generar informe por corte\n(RF-11)" as UC11 <<Mínimo>>
+  }
+
+  package "Canalización" {
+    usecase "Registrar canalización\n(RF-05, RN-03, RN-09)" as UC05 <<Mínimo>>
+    usecase "Cambiar estado de la canalización\n(RF-06, Tabla VI)" as UC06 <<Mínimo>>
+    usecase "Cerrar canalización\n(RN-04)" as UC06C <<Mínimo>>
+    usecase "Atender canalizaciones en bandeja\n(RF-07)" as UC07 <<Mínimo>>
+    usecase "Escalar canalización\n(RF-08)" as UC08 <<Segundo>>
+    usecase "Registrar vinculación externa\n(RF-08)" as UC08B <<Segundo>>
+    usecase "Consultar notificaciones\n(RF-09)" as UC09 <<Segundo>>
+    usecase "Generar alerta por falta de atención\n(RF-10, RN-07)" as UC10 <<Segundo>>
+  }
+
+  package "Supervisión y administración" {
+    usecase "Consultar tablero y estado por folio\nsin descripción (RF-12, RN-05)" as UC12 <<Tercero>>
+    usecase "Consultar bitácora\n(RF-13)" as UC13 <<Mínimo>>
+    usecase "Administrar catálogos y\nasignación tutor-grupo (RF-14, RN-01)" as UC14 <<Segundo>>
+    usecase "Reasignar tutor\n(RN-02)" as UC14B <<Segundo>>
+    usecase "Operar módulo experimental Yolia\n(RF-15, RN-08)" as UC15 <<Segundo>>
+  }
+
+  usecase "Registrar en bitácora\n(RF-13)" as UCBIT <<Mínimo>>
+  usecase "Consultar tutorado por\nnúmero de control (RN-06, RES-01)" as UCSIG <<Mínimo>>
+}
+
+TUT --> UC02
+TUT --> UC03
+TUT --> UC04
+TUT --> UC05
+TUT --> UC06C
+TUT --> UC09
+TUT --> UC11
+
+APO --> UC07
+JEF --> UC08
+JEF --> UC14B
+COO --> UC08B
+COO --> UC12
+ADM --> UC13
+ADM --> UC14
+ADM --> UC15
+RELOJ --> UC10
+
+TUT --> UC01
+APO --> UC01
+JEF --> UC01
+COO --> UC01
+ADM --> UC01
+
+UC07 ..> UC06 : <<include>>
+UC06C ..> UC06 : <<include>>
+UC08 ..> UC06 : <<include>>
+UC08B ..> UC06 : <<include>>
+UC09 ..> UC06 : <<extend>>\n(tras cada cambio de estado)
+UC02 ..> UCSIG : <<include>>
+UCSIG --> SIGEA
+
+UC02 ..> UCBIT : <<include>>\n(acceso al expediente)
+UC03 ..> UCBIT : <<include>>
+UC04 ..> UCBIT : <<include>>
+UC05 ..> UCBIT : <<include>>
+UC06 ..> UCBIT : <<include>>
+
+note right of UCSIG
+  RES-01: en el prototipo la consulta
+  a SIGEA se simula con datos sintéticos
+  (prefijo SIN, RES-02).
+end note
+
+note bottom of UC14B
+  La operación de reasignar es del segundo incremento
+  (con RF-14); la regla «un tutor por grupo y ciclo»
+  (RN-02) se aplica desde el mínimo en el modelo de datos.
+end note
+
+note bottom of UC15
+  Desactivado por omisión; solo el administrador
+  lo activa en modo prueba. Sus resultados nunca
+  generan canalizaciones (RN-08).
+end note
+
+legend right
+  Azul: incremento mínimo (P4)
+  Amarillo: segundo incremento
+  Gris: tercer incremento
+endlegend
+@enduml
