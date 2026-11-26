@@ -1,0 +1,66 @@
+@startuml D03_estados_canalizacion
+' OHTLI · P3 · D03 Máquina de estados de la canalización
+' Fuente: P2 V4, Tabla VI (transiciones permitidas), Fig. 3, RF-05 a RF-10, RN-03, RN-04, RN-07, RN-09
+' Notación de transición: evento [condición] / acción
+' Toda transición ejecuta además: / registrar CambioEstado y Bitácora (RF-06, RF-13);
+' notificar al tutor (RF-09, segundo incremento)
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam state {
+  BackgroundColor #DDEBF7
+  BorderColor #2F5597
+  BackgroundColor<<Segundo>> #FFF2CC
+  BorderColor<<Segundo>> #BF9000
+  BackgroundColor<<Final>> #E2EFDA
+  BorderColor<<Final>> #548235
+}
+
+[*] --> Registrada : registrar(tutorado, motivo, instancia,\nprioridad, informado, descripción)\n[rol = tutor del estudiante (RN-03)\n∧ instancia ≠ vacía\n∧ informado registrado (RN-09)\n∧ |descripción| ≤ 500 (RNF-04)]\n/ asignar folio CAN-AAAA-NNNN
+
+state Registrada
+state Recibida
+state "En atención" as EnAtencion
+state "No asistió" as NoAsistio
+state Atendida
+state Escalada <<Segundo>>
+state Cerrada <<Final>>
+
+Registrada --> Recibida : recibir\n[rol = área de destino]
+Recibida --> EnAtencion : iniciar atención\n[rol = área de destino]
+EnAtencion --> Atendida : registrar atención\n[rol = área de destino]\n/ guardar resultado general
+Recibida --> NoAsistio : registrar inasistencia\n[rol = área de destino]
+NoAsistio --> Recibida : programar nueva cita\n[rol = área de destino]
+Atendida --> Cerrada : cerrar\n[rol = tutor]
+Registrada --> Cerrada : cerrar con motivo\n[rol = tutor ∧ motivo ≠ vacío (RN-04)]
+NoAsistio --> Cerrada : cerrar con motivo\n[rol = tutor ∧ motivo ≠ vacío (RN-04)]
+
+Registrada -[#BF9000,dashed]-> Escalada : escalar\n[rol = jefatura de carrera (RN-03)]
+Recibida -[#BF9000,dashed]-> Escalada : escalar\n[rol = jefatura de carrera]
+Escalada -[#BF9000,dashed]-> EnAtencion : registrar vinculación externa\n[rol = coordinación de tutoría]
+
+Cerrada --> [*]
+
+note right of Registrada
+  Alerta (RF-10, RN-07, segundo incremento):
+  si permanece en Registrada o Recibida
+  más de N días hábiles (N = 5) se genera
+  una Alerta para la coordinación.
+end note
+
+note left of NoAsistio
+  RN-09: la inasistencia es un estado;
+  no cierra el caso automáticamente.
+end note
+
+note bottom of Escalada
+  Segundo incremento (con RF-08).
+  En P4 no se implementa ni se prueba.
+end note
+
+legend right
+  Azul: 8 transiciones del incremento mínimo (se prueban en P4)
+  Línea punteada amarilla: 3 transiciones del segundo incremento
+  Cualquier transición no listada se rechaza (RF-06)
+endlegend
+@enduml

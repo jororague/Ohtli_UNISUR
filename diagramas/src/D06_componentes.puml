@@ -1,0 +1,138 @@
+@startuml D06_componentes
+' OHTLI · P3 · D06 Diagrama de componentes
+' Fuente: P2 V4 (RF-01 a RF-15, RNF-01 a RNF-09, RES-01, RN-05, RN-06, RN-08), D02, D05
+' Arquitectura objetivo para la construcción futura (Django con PostgreSQL, ADR-01).
+' El prototipo navegable v0.1 modela estas mismas responsabilidades; no es esta construcción.
+' Convención: sin estereotipo = incremento mínimo; «Segundo» y «Tercero» = incrementos posteriores.
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam componentStyle uml2
+skinparam component {
+  BackgroundColor #DDEBF7
+  BorderColor #2F5597
+  BackgroundColor<<Segundo>> #FFF2CC
+  BorderColor<<Segundo>> #BF9000
+  BackgroundColor<<Tercero>> #EDEDED
+  BorderColor<<Tercero>> #7F7F7F
+  BackgroundColor<<sistema externo>> #FFFFFF
+  BorderColor<<sistema externo>> #7F7F7F
+}
+skinparam package {
+  BackgroundColor #FFFFFF
+  BorderColor #595959
+}
+
+package "Cliente" {
+  component "Navegador web\n(escritorio y teléfono de 360 px,\nRNF-09)" as NAV
+}
+
+() "HTTPS" as I_WEB
+() "ConsultaSIGEA" as I_SIGEA
+() "MotorYolia" as I_YOL
+() "SQL (psycopg)" as I_SQL
+
+package "OHTLI · aplicación Django" {
+  component "Middleware de contexto\n(sesión de 15 min, rol,\nSET LOCAL ROLE y app.id_usuario)" as MID
+  component "cuentas\n(RF-01, RNF-01)" as CUE
+  component "seguimiento\n(RF-02, RF-03, RF-04)" as SEG
+  component "canalizacion\n(RF-05, RF-06, RF-07)" as CAN
+  component "escalamiento\n(RF-08)" as ESC <<Segundo>>
+  component "notificaciones\n(RF-09)" as NOT <<Segundo>>
+  component "alertas\n(RF-10, RN-07)" as ALE <<Segundo>>
+  component "informes\n(RF-11, PDF)" as INF
+  component "tablero\n(RF-12, RN-05)" as TAB <<Tercero>>
+  component "auditoria\n(RF-13: registro de accesos\ny consulta de bitácora)" as AUD
+  component "catalogos\n(RF-14, RN-01, RN-02)" as CAT <<Segundo>>
+  component "adaptador_sigea\n(RES-01, RN-06)" as ADS
+  component "cliente_yolia\n(RF-15, RN-08)" as CYO <<Segundo>>
+}
+
+package "PostgreSQL · base ohtli" {
+  component "Esquema ohtli\n(tablas, D08)" as ESQ
+  component "Políticas RLS por rol\n(ADR-02)" as RLS
+  component "Vista v_canalizacion_coordinacion\n(sin descripción ni número de control,\nRN-05)" as VCO
+  component "fn_cambiar_estado y\ntransicion_permitida (ADR-03)" as TRN
+  component "Triggers de bitácora,\nsolo inserción (ADR-04)" as TBI
+  component "Esquema yolia\n(ADR-05)" as EYO <<Segundo>>
+}
+
+component "Servicio Yolia\n(proceso aparte, desactivado\npor omisión)" as SYO <<Segundo>>
+component "SIGEA" as SIG <<sistema externo>>
+
+' --- Interfaces provistas ---
+MID - I_WEB
+ADS - I_SIGEA
+SYO - I_YOL
+ESQ - I_SQL
+
+' --- Interfaces requeridas ---
+NAV ..> I_WEB : solicita
+SEG ..> I_SIGEA : tutorados por grupo\ny número de control
+CAN ..> I_SIGEA : existeNumeroControl
+CYO ..> I_YOL : evaluar(perfil sintético)
+
+' --- Dependencias internas de la aplicación ---
+MID --> CUE : autentica
+MID --> SEG
+MID --> CAN
+MID --> INF
+SEG ..> AUD : registra acceso\nal expediente
+CAN ..> AUD : registra acceso\nal folio
+CAN ..> NOT : evento de\ncambio de estado
+ESC ..> CAN : usa cambio de estado
+INF ..> SEG : sesiones y notas
+INF ..> CAN : canalizaciones por estado
+TAB ..> VCO : solo lectura
+ALE ..> CAN : estado y días hábiles
+
+SEG ..> I_SQL
+CAN ..> I_SQL
+AUD ..> I_SQL
+CAT ..> I_SQL
+CUE ..> I_SQL
+CAN ..> TRN : invoca la función
+ESQ -- RLS
+ESQ -- VCO
+ESQ -- TRN
+ESQ -- TBI
+SYO --> EYO : rol yolia_app
+ADS ..> SIG : integración futura\n(simulada con datos SIN)
+
+note right of MID
+  Fija en cada transacción el rol de base de datos
+  (r_tutor, r_apoyo, r_jefatura, r_coord, r_admin)
+  y app.id_usuario. Así RLS, la validación de
+  transiciones y la bitácora conocen al usuario
+  real aunque Django use una sola conexión (ADR-02).
+end note
+
+note bottom of TRN
+  Ningún rol tiene UPDATE directo sobre
+  canalizacion: el estado solo cambia
+  mediante fn_cambiar_estado, que valida
+  la Tabla VI y escribe CambioEstado y
+  Bitácora en la misma transacción (D05).
+end note
+
+note bottom of SYO
+  Sin acceso al esquema ohtli: no puede leer
+  expedientes ni crear canalizaciones (RN-08).
+  Solo procesa números de control sintéticos
+  (RES-02). Activable solo por el administrador.
+end note
+
+note bottom of ADS
+  Prototipo: AdaptadorSIGEASimulado (datos SIN).
+  Construcción futura: AdaptadorSIGEA real con
+  la misma interfaz; no se recaptura la
+  entrevista inicial (RN-06).
+end note
+
+legend right
+  Azul: incremento mínimo (P4)
+  Amarillo: segundo incremento
+  Gris: tercer incremento
+  Lollipop: interfaz provista; flecha punteada: dependencia o interfaz requerida
+endlegend
+@enduml

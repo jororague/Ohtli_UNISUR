@@ -1,0 +1,101 @@
+@startuml D07_despliegue
+' OHTLI · P3 · D07 Diagrama de despliegue
+' Fuente: P2 V4 (RNF-01, RNF-02, RNF-03, RNF-07 modificado, RNF-08, RNF-09, RES-01, RES-04, RES-05), D06, ADR-01 a ADR-05
+' Arquitectura objetivo para la construcción futura en un servidor institucional del ITESCO.
+' No describe una instalación existente: el sistema operativo y el servidor son supuestos de diseño
+' que se confirmarán con el área de sistemas del instituto. Todo el software es libre (RES-04).
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam node {
+  BackgroundColor #DDEBF7
+  BorderColor #2F5597
+  BackgroundColor<<Segundo>> #FFF2CC
+  BorderColor<<Segundo>> #BF9000
+  BackgroundColor<<sistema externo>> #FFFFFF
+  BorderColor<<sistema externo>> #7F7F7F
+}
+skinparam database {
+  BackgroundColor #E2EFDA
+  BorderColor #548235
+}
+skinparam artifact {
+  BackgroundColor #FFFFFF
+  BorderColor #595959
+}
+
+node "Dispositivo del usuario\n(computadora o teléfono)" as DEV {
+  artifact "Navegador web\n(diseño adaptable, 360 px)" as BR
+}
+
+node "Servidor institucional ITESCO\n«supuesto: Linux, p. ej. Ubuntu Server LTS»\nfirewall: solo 80 y 443 públicos" as SRV {
+
+  node "Nginx\nproxy inverso y TLS\n:443 (TLS 1.2 o superior)\n:80 → redirección 301 a HTTPS" as NGX
+
+  artifact "Archivos estáticos\n(CSS, JS)" as STA
+
+  node "Gunicorn (WSGI)\nservicio systemd" as GUN {
+    artifact "ohtli\n(Python 3, Django)" as OHT
+  }
+
+  node "Temporizador systemd\n(diario, días hábiles)" as TMR <<Segundo>> {
+    artifact "manage.py generar_alertas\n(RF-10, RN-07)" as GA
+  }
+
+  node "Servicio Yolia\n127.0.0.1:8100\nservicio systemd, desactivado" as YOL <<Segundo>> {
+    artifact "motor_yolia\n(Python 3)" as MY
+  }
+
+  database "PostgreSQL\n127.0.0.1:5432\n(sin acceso desde la red)" as PG {
+    artifact "Esquema ohtli\n(RLS, vistas, funciones, triggers)" as SO
+    artifact "Esquema yolia" as SY
+  }
+}
+
+node "Almacenamiento de respaldo\ninstitucional" as BK {
+  artifact "pg_dump diario cifrado" as DUMP
+}
+
+node "SIGEA\n(servidor del instituto)" as SIG <<sistema externo>>
+
+BR --> NGX : HTTPS 443\n(RNF-03)
+NGX --> STA : sirve
+NGX --> GUN : socket Unix\n/run/ohtli.sock
+OHT --> SO : TCP local\nrol de conexión ohtli_app\n(sin BYPASSRLS ni superusuario)
+GA --> SO : rol ohtli_app
+OHT ..> MY : HTTP local\nsolo si YOLIA_ACTIVO = verdadero
+MY --> SY : rol yolia_app\n(solo esquema yolia)
+PG ..> DUMP : respaldo
+OHT ..> SIG : integración futura (RES-01)\nen el prototipo se simula
+
+note right of NGX
+  Cabeceras de seguridad (HSTS) y
+  cookies de sesión con Secure y HttpOnly.
+  La sesión expira a los 15 min de
+  inactividad (RNF-01).
+end note
+
+note right of PG
+  Roles de base de datos (ADR-02):
+  ohtli_owner: dueño del esquema y migraciones
+  ohtli_app: conexión de Django; miembro de
+    r_tutor, r_apoyo, r_jefatura, r_coord, r_admin
+  yolia_app: solo el esquema yolia
+  Ningún rol de la aplicación puede modificar
+  ni borrar la bitácora (ADR-04).
+end note
+
+note bottom of BK
+  RES-05: antes de cualquier uso real se requieren
+  aviso de privacidad, consentimiento y evaluación
+  de impacto; el respaldo forma parte de las
+  medidas de seguridad que esa evaluación revisa.
+end note
+
+legend right
+  Azul: incremento mínimo
+  Amarillo: segundo incremento
+  Flecha continua: comunicación en operación
+  Flecha punteada: condicionada o futura
+endlegend
+@enduml

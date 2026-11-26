@@ -1,0 +1,155 @@
+@startuml D08a_modelo_fisico_usuarios_seguimiento
+' OHTLI · P3 · D08a Modelo físico (parte 1 de 2): catálogos, usuarios, grupos y seguimiento
+' Fuente: D08_modelo_fisico.puml (modelo completo, que se conserva como referencia en el repositorio)
+' Notación: * = NOT NULL; PK = llave primaria; FK = llave foránea; UQ = única.
+' Clasificación del dato (Anexo D): «I» identificativo, «II» identificativo indirecto, «S» sensible.
+' {P3} = refinamiento frente al Anexo D (control de cambios de P3).
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #2F5597
+  HeaderBackgroundColor #DDEBF7
+}
+hide circle
+hide empty methods
+
+package "Catálogos y configuración (RF-14)" {
+  entity carrera {
+    * clave : varchar(10) <<PK>>
+    --
+    * nombre : varchar(80)
+  }
+  entity ciclo {
+    * clave : varchar(10) <<PK>>
+    --
+    * fecha_inicio : date
+    * fecha_fin : date
+  }
+  entity instancia_apoyo {
+    * id_instancia : integer <<PK>>
+    --
+    * nombre : varchar(80) <<UQ>>
+    * tipo : varchar(10)
+    * activa : boolean
+  }
+  entity motivo_deteccion {
+    * clave : varchar(30) <<PK>>
+    --
+    * nombre : varchar(60)
+    * activo : boolean
+  }
+  entity dia_inhabil {
+    * fecha : date <<PK>>
+    --
+    * descripcion : varchar(80)
+  }
+  entity parametro {
+    * clave : varchar(30) <<PK>>
+    --
+    * valor : varchar(60)
+    * descripcion : varchar(200)
+  }
+}
+
+package "Usuarios y grupos" {
+  entity usuario {
+    * id_usuario : integer <<PK>>  «II»
+    --
+    * nombre : varchar(120)  «I»
+    * correo : varchar(120) <<UQ>>  «I»
+    * hash_contrasena : varchar(255)  «S»
+    * rol : rol_usuario
+    id_instancia : integer <<FK>> {P3}
+    clave_carrera : varchar(10) <<FK>> {P3}
+    * activo : boolean
+    ultimo_acceso : timestamptz
+  }
+  entity grupo {
+    * id_grupo : integer <<PK>>
+    --
+    * clave : varchar(10) {P3}
+    * clave_carrera : varchar(10) <<FK>> {P3}
+    * ciclo : varchar(10) <<FK>>
+    * semestre : smallint
+    * id_tutor : integer <<FK>>  «II»
+  }
+  entity tutorado {
+    * numero_control : varchar(10) <<PK>>  «I»
+  }
+  entity tutorado_grupo {
+    * numero_control : varchar(10) <<PK, FK>>  «I»
+    * ciclo : varchar(10) <<PK>>
+    --
+    * id_grupo : integer <<FK>>
+  }
+}
+
+package "Seguimiento (RF-03, RF-04)" {
+  entity nota_seguimiento {
+    * id_nota : integer <<PK>>
+    --
+    * numero_control : varchar(10) <<FK>>  «I»
+    * id_autor : integer <<FK>>  «II»
+    * fecha : timestamptz
+    * eje : eje_nota
+    * texto : varchar(1000)  «S»
+  }
+  entity sesion {
+    * id_sesion : integer <<PK>>
+    --
+    * id_tutor : integer <<FK>>  «II»
+    * id_grupo : integer <<FK>>
+    * tipo : tipo_sesion
+    * fecha : date
+    * tema : varchar(150)
+    acuerdos : varchar(500)  «S»
+  }
+  entity sesion_asistente {
+    * id_sesion : integer <<PK, FK>>
+    * numero_control : varchar(10) <<PK, FK>>  «I»
+  }
+}
+
+carrera ||--o{ grupo
+ciclo ||--o{ grupo
+usuario ||--o{ grupo : tutor
+grupo ||--o{ tutorado_grupo
+tutorado ||--o{ tutorado_grupo
+carrera |o--o{ usuario : jefatura
+instancia_apoyo |o--o{ usuario : apoyo
+tutorado ||--o{ nota_seguimiento
+usuario ||--o{ nota_seguimiento : autor
+usuario ||--o{ sesion : tutor
+grupo ||--o{ sesion
+sesion ||--o{ sesion_asistente
+tutorado ||--o{ sesion_asistente
+
+note bottom of tutorado_grupo
+  Un grupo por tutorado y ciclo (RN-02):
+  la llave es (numero_control, ciclo).
+end note
+
+note bottom of tutorado
+  Solo el número de control: los datos de la
+  entrevista inicial se consultan en SIGEA (RN-06).
+  En el prototipo, solo prefijo SIN (RES-02).
+end note
+
+note bottom of parametro
+  N_DIAS_ALERTA = 5 (RN-07)
+  CICLO_VIGENTE = 20263
+  YOLIA_ACTIVO = falso (RF-15)
+end note
+
+legend right
+  Tipos enumerados: rol_usuario (tutor, jefatura_carrera,
+  coord_tutoria, apoyo, admin), eje_nota (academico,
+  personal, profesional), tipo_sesion (grupal, individual).
+  Restricciones CHECK: Tabla VIII de P3.
+  La canalización y la auditoría están en D08b.
+endlegend
+@enduml
