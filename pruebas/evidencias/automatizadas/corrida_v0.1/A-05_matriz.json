@@ -1,0 +1,50 @@
+[
+ {
+  "cuenta": "T01",
+  "menu": "Tutorados, Sesiones, Canalizaciones, Informe, Notificaciones",
+  "alcance": "40 tutorados; folios 0001–0005",
+  "coincide": "Sí"
+ },
+ {
+  "cuenta": "T02",
+  "menu": "Tutorados, Sesiones, Canalizaciones, Informe, Notificaciones",
+  "alcance": "40 tutorados; folios 0006–0010",
+  "coincide": "Sí"
+ },
+ {
+  "cuenta": "T03",
+  "menu": "Tutorados, Sesiones, Canalizaciones, Informe, Notificaciones",
+  "alcance": "40 tutorados; folios 0011–0015",
+  "coincide": "Sí"
+ },
+ {
+  "cuenta": "APOYO-PSI",
+  "menu": "Bandeja",
+  "alcance": "9 folios en «Todas», 9 en «Abiertas»",
+  "coincide": "Sí"
+ },
+ {
+  "cuenta": "APOYO-DA",
+  "menu": "Bandeja",
+  "alcance": "6 folios en «Todas», 4 en «Abiertas»",
+  "coincide": "Sí"
+ },
+ {
+  "cuenta": "JEF_CARRERA",
+  "menu": "Canalizaciones",
+  "alcance": "15 folios",
+  "coincide": "Sí"
+ },
+ {
+  "cuenta": "COORD",
+  "menu": "Estado por folio, Alertas, Tablero",
+  "alcance": "15 folios",
+  "coincide": "Sí"
+ },
+ {
+  "cuenta": "ADMIN",
+  "menu": "Bitácora, Catálogos, Yolia",
+  "alcance": "sin vistas de tutorados ni folios",
+  "coincide": "Sí"
+ }
+]

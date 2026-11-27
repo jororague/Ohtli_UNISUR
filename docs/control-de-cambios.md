@@ -18,3 +18,11 @@ P2 versión 4 se entrega sin modificaciones. Los ajustes siguientes surgieron al
 | CC-12 | Anexo D | Tablas de soporte: `carrera`, `ciclo`, `motivo_deteccion` (RF-14), `parametro`, `dia_inhabil` (RN-07), `folio_contador` (RF-05) y `transicion_permitida` (RF-06). |
 | CC-13 | Anexo E | El usuario genérico denominado `APOYO` del historial sintético se asigna a la cuenta de Psicología o de Desarrollo Académico según la instancia del folio. |
 | CC-14 | RN-07 | Definición operativa de día hábil: lunes a viernes posteriores al último cambio, hasta la fecha de corte inclusive, sin días inhábiles registrados. Reproduce el oráculo del Anexo E. |
+
+
+# Cambios del prototipo en P4
+
+| ID | Elemento | Cambio en el prototipo v0.2 y motivo |
+|---|---|---|
+| INC-01 | RF-06 (CP-06) | La observación pasa a ser obligatoria en cada cambio de estado; antes era opcional. CP-06 pide que cada cambio guarde usuario, fecha y observación; CC-11 la exigía solo en cierre y atención, y la regla nueva la incluye. El registro inicial de una canalización guarda «Registro de la canalización». Detectada en TR-10. |
+| INC-02 | RF-11 (CP-04) | El informe del tutor agrega la tabla «Sesiones del periodo» con fecha, tipo, tema y asistentes. Detectada en B-04. |
