@@ -1,0 +1,264 @@
+{
+ "etiqueta": "v0.1",
+ "prototipo": "proto_v0.1.html",
+ "inicio": "2026-11-26T22:49:13",
+ "fin": "2026-11-26T22:49:29",
+ "navegador": "Google Chrome 153.0.8010.12 sin pantalla (Playwright)",
+ "resultados": [
+  {
+   "id": "A-01",
+   "observado": "T01: 40 tutorados; 6 + 3 sesiones; 5 canalizaciones; por estado Atendida 1, Cerrada 1, En atención 1, No asistió 1, Recibida 1; alertas 1 | T02: 40 tutorados; 6 + 3 sesiones; 5 canalizaciones; por estado Atendida 1, Escalada 1, No asistió 1, Recibida 1, Registrada 1; alertas 1 | T03: 40 tutorados; 6 + 3 sesiones; 5 canalizaciones; por estado Cerrada 1, En atención 1, Escalada 1, Recibida 1, Registrada 1; alertas 2",
+   "resultado": "Pasa",
+   "capturas": [
+    "A-01_T01.png",
+    "A-01_T02.png",
+    "A-01_T03.png"
+   ]
+  },
+  {
+   "id": "A-02",
+   "observado": "4 alertas: CAN-2026-0005, CAN-2026-0006, CAN-2026-0013, CAN-2026-0014. CAN-2026-0008 no aparece.",
+   "resultado": "Pasa",
+   "capturas": [
+    "A-02_alertas.png"
+   ]
+  },
+  {
+   "id": "A-03",
+   "observado": "Total 42 cambios; por folio 0001:4, 0002:3, 0003:5, 0004:3, 0005:2, 0006:1, 0007:2, 0008:2, 0009:4, 0010:3, 0011:5, 0012:3, 0013:2, 0014:1, 0015:2. Todas las filas con usuario y fecha; sin huecos.",
+   "resultado": "Pasa",
+   "capturas": [
+    "A-03_0001.png",
+    "A-03_0007.png",
+    "A-03_0013.png"
+   ]
+  },
+  {
+   "id": "A-04",
+   "observado": "Columnas de COORD: Folio, Grupo, Instancia, Prioridad, Registro, Estado, Último cambio, Días hábiles. Ni COORD ni JEF_CARRERA ven número de control, motivo ni descripción; aparece el aviso de detalle confidencial.",
+   "resultado": "Pasa",
+   "capturas": [
+    "A-04_coord_lista.png",
+    "A-04_coord_folio.png",
+    "A-04_jef_carrera_folio.png"
+   ]
+  },
+  {
+   "id": "A-05",
+   "observado": "T01: Tutorados, Sesiones, Canalizaciones, Informe, Notificaciones; 40 tutorados; folios 0001–0005 | T02: Tutorados, Sesiones, Canalizaciones, Informe, Notificaciones; 40 tutorados; folios 0006–0010 | T03: Tutorados, Sesiones, Canalizaciones, Informe, Notificaciones; 40 tutorados; folios 0011–0015 | APOYO-PSI: Bandeja; 9 folios en «Todas», 9 en «Abiertas» | APOYO-DA: Bandeja; 6 folios en «Todas», 4 en «Abiertas» | JEF_CARRERA: Canalizaciones; 15 folios | COORD: Estado por folio, Alertas, Tablero; 15 folios | ADMIN: Bitácora, Catálogos, Yolia; sin vistas de tutorados ni folios",
+   "resultado": "Pasa",
+   "capturas": [
+    "A-05_T01.png",
+    "A-05_T02.png",
+    "A-05_T03.png",
+    "A-05_APOYO-PSI.png",
+    "A-05_APOYO-DA.png",
+    "A-05_JEF_CARRERA.png",
+    "A-05_COORD.png",
+    "A-05_ADMIN.png"
+   ]
+  },
+  {
+   "id": "A-06",
+   "observado": "120 números de control revisados; 0 sin prefijo SIN. Aviso de datos sintéticos visible en la franja: sí.",
+   "resultado": "Pasa",
+   "capturas": [
+    "A-06_aviso.png"
+   ]
+  },
+  {
+   "id": "B-01",
+   "observado": "T01 ve 40 tutorados. Mensaje: «Rechazada: SIN262001 no pertenece a su grupo. Solo el tutor del estudiante registra su canalización (RN-03).». Folios de T01 después del intento: 5. Bitácora con «Intento denegado de canalización» de T01: sí.",
+   "resultado": "Pasa",
+   "capturas": [
+    "B-01_lista.png",
+    "B-01_rechazo.png",
+    "B-01_bitacora.png"
+   ]
+  },
+  {
+   "id": "B-02",
+   "observado": "Paso 1: «No se guardó. Falta: instancia de destino.» Paso 2: «No se guardó. Falta: si el estudiante fue informado.» Paso 3: «La descripción excede 500 caracteres (RNF-04).» (contador 520 / 500). Paso 4: «Canalización registrada con folio CAN-2026-0016, estado «Registrada».»; estado Registrada; historial 1 fila, usuario T01, fecha 2026-11-18 22:49:20. Campos de diagnóstico: 0; aviso de minimización: sí.",
+   "resultado": "Pasa",
+   "capturas": [
+    "B-02_1.png",
+    "B-02_2.png",
+    "B-02_3.png",
+    "B-02_4.png"
+   ]
+  },
+  {
+   "id": "B-03",
+   "observado": "Paso 1: «No se guardó: seleccione el eje (RF-03).» Paso 2: «Nota guardada.»; nota mostrada: «2026-11-18 22:49:21 · eje académico · autor T01 Prueba B-03».",
+   "resultado": "Pasa",
+   "capturas": [
+    "B-03_1.png",
+    "B-03_2.png"
+   ]
+  },
+  {
+   "id": "B-04",
+   "observado": "Paso 1: «No se guardó. Falta: acuerdos (obligatorios en sesión individual).» Paso 2: «Sesión SES-T01-P10 registrada con 25 asistente(s).»; fila: «18/11/2026 grupal Prueba B-04 grupal 25 Prueba». Paso 3: el informe muestra «7 + 3» sesiones; no lista la sesión ni su número de asistentes, solo los conteos por tipo.",
+   "resultado": "Parcial",
+   "capturas": [
+    "B-04_1.png",
+    "B-04_2.png",
+    "B-04_informe.png"
+   ]
+  },
+  {
+   "id": "B-05",
+   "observado": "Mensaje: «Transición no permitida: «Registrada» → «Atendida» para área de apoyo (RF-06, Tabla VI). No se registró ningún cambio.». Historial: 1 cambio(s); estado Registrada.",
+   "resultado": "Pasa",
+   "capturas": [
+    "B-05_rechazo.png"
+   ]
+  },
+  {
+   "id": "B-06",
+   "observado": "Paso 1: «Transición no permitida: «Recibida» → «Cerrada» para tutor (RF-06, Tabla VI). No se registró ningún cambio.»; estado Recibida. Paso 2: «Para cerrar sin atención se requiere un motivo de cierre (RN-04).»; estado Registrada.",
+   "resultado": "Pasa",
+   "capturas": [
+    "B-06_1.png",
+    "B-06_2.png"
+   ]
+  },
+  {
+   "id": "B-07",
+   "observado": "Paso 1: «Folio CAN-2026-0013: «Recibida» → «No asistió».»; estado No asistió. Paso 2: CAN-2026-0013 sigue en «Abiertas». Paso 3: «Folio CAN-2026-0013: «No asistió» → «Cerrada».»; estado Cerrada.",
+   "resultado": "Pasa",
+   "capturas": [
+    "B-07_1.png",
+    "B-07_2.png",
+    "B-07_3.png"
+   ]
+  },
+  {
+   "id": "B-08",
+   "observado": "APOYO-DA: 6 en «Todas», 4 en «Abiertas». «Folio CAN-2026-0012: «En atención» → «Atendida».»; estado Atendida. T03 ve CAN-2026-0012 en Atendida; notificaciones: CAN-2026-0012, CAN-2026-0013.",
+   "resultado": "Pasa",
+   "capturas": [
+    "B-08_1.png",
+    "B-08_2.png",
+    "B-08_3.png"
+   ]
+  },
+  {
+   "id": "B-09",
+   "observado": "8 registros en la bitácora. Acciones: Cambio de estado En atención → Atendida; Cambio de estado No asistió → Cerrada; Cambio de estado Recibida → No asistió; Consulta de expediente; Intento denegado de canalización; Registro de canalización; Registro de nota de seguimiento; Registro de sesión. Están todas las operaciones esperadas. Los rechazos no aparecen.",
+   "resultado": "Pasa",
+   "capturas": [
+    "B-09_bitacora.png"
+   ]
+  },
+  {
+   "id": "TR-01",
+   "observado": "«Folio CAN-2026-0006: «Registrada» → «Recibida».»; estado Recibida. Fila nueva: fecha 2026-11-18 22:49:24, Registrada → Recibida, usuario APOYO-PSI, observación «Prueba TR-01».",
+   "resultado": "Pasa",
+   "capturas": [
+    "TR-01.png"
+   ]
+  },
+  {
+   "id": "TR-02",
+   "observado": "«Folio CAN-2026-0005: «Recibida» → «En atención».»; estado En atención. Fila nueva: fecha 2026-11-18 22:49:25, Recibida → En atención, usuario APOYO-PSI, observación «Prueba TR-02».",
+   "resultado": "Pasa",
+   "capturas": [
+    "TR-02.png"
+   ]
+  },
+  {
+   "id": "TR-03",
+   "observado": "«Folio CAN-2026-0004: «En atención» → «Atendida».»; estado Atendida. Fila nueva: fecha 2026-11-18 22:49:25, En atención → Atendida, usuario APOYO-PSI, observación «Prueba TR-03».",
+   "resultado": "Pasa",
+   "capturas": [
+    "TR-03.png"
+   ]
+  },
+  {
+   "id": "TR-04",
+   "observado": "«Folio CAN-2026-0013: «Recibida» → «No asistió».»; estado No asistió. Fila nueva: fecha 2026-11-18 22:49:25, Recibida → No asistió, usuario APOYO-PSI, observación «Prueba TR-04».",
+   "resultado": "Pasa",
+   "capturas": [
+    "TR-04.png"
+   ]
+  },
+  {
+   "id": "TR-05",
+   "observado": "«Folio CAN-2026-0002: «No asistió» → «Recibida».»; estado Recibida. Fila nueva: fecha 2026-11-18 22:49:25, No asistió → Recibida, usuario APOYO-DA, observación «Prueba TR-05».",
+   "resultado": "Pasa",
+   "capturas": [
+    "TR-05.png"
+   ]
+  },
+  {
+   "id": "TR-06",
+   "observado": "«Folio CAN-2026-0001: «Atendida» → «Cerrada».»; estado Cerrada. Fila nueva: fecha 2026-11-18 22:49:26, Atendida → Cerrada, usuario T01, observación «Prueba TR-06».",
+   "resultado": "Pasa",
+   "capturas": [
+    "TR-06.png"
+   ]
+  },
+  {
+   "id": "TR-07",
+   "observado": "«Folio CAN-2026-0014: «Registrada» → «Cerrada».»; estado Cerrada. Fila nueva: fecha 2026-11-18 22:49:26, Registrada → Cerrada, usuario T03, observación «Prueba TR-07 · Motivo de cierre: Prueba TR-07».",
+   "resultado": "Pasa",
+   "capturas": [
+    "TR-07.png"
+   ]
+  },
+  {
+   "id": "TR-08",
+   "observado": "«Folio CAN-2026-0010: «No asistió» → «Cerrada».»; estado Cerrada. Fila nueva: fecha 2026-11-18 22:49:26, No asistió → Cerrada, usuario T02, observación «Prueba TR-08 · Motivo de cierre: Prueba TR-08».",
+   "resultado": "Pasa",
+   "capturas": [
+    "TR-08.png"
+   ]
+  },
+  {
+   "id": "TR-09",
+   "observado": "«Transición especificada para el segundo incremento (RF-08); no está implementada en este prototipo.»; estado Recibida.",
+   "resultado": "Pasa",
+   "capturas": [
+    "TR-09.png"
+   ]
+  },
+  {
+   "id": "TR-10",
+   "observado": "«Folio CAN-2026-0008: «Recibida» → «En atención».»; estado En atención. El cambio se registró con observación vacía (fila: Recibida → En atención, usuario APOYO-DA).",
+   "resultado": "Falla",
+   "capturas": [
+    "TR-10.png"
+   ]
+  },
+  {
+   "id": "TR-11",
+   "observado": "T01: 3 (CAN-2026-0002, CAN-2026-0004, CAN-2026-0005) | T02: 2 (CAN-2026-0008, CAN-2026-0006) | T03: 1 (CAN-2026-0013)",
+   "resultado": "Pasa",
+   "capturas": [
+    "TR-11_T01.png",
+    "TR-11_T02.png",
+    "TR-11_T03.png"
+   ]
+  },
+  {
+   "id": "D-02",
+   "observado": "Vista de 360 × 740 px (emulación móvil en Chrome). Ancho del contenido frente al de la pantalla (y elementos que lo rebasan): 1_entrada: 360/360 px, 0 fuera; 2_bandeja: 360/360 px, 0 fuera; 3_folio: 360/360 px, 0 fuera; 4_atendida: 360/360 px, 0 fuera. Tareas de RF-07 completadas; estado final Atendida.",
+   "resultado": "Pasa",
+   "capturas": [
+    "D-02_1_entrada.png",
+    "D-02_2_bandeja.png",
+    "D-02_3_folio.png",
+    "D-02_4_atendida.png"
+   ]
+  },
+  {
+   "id": "D-03",
+   "observado": "Sesión abierta con T01 (sí); tras avanzar el reloj del navegador 16 minutos sin actividad, aparece la pantalla de selección de cuenta.",
+   "resultado": "Pasa",
+   "capturas": [
+    "D-03.png"
+   ]
+  }
+ ]
+}

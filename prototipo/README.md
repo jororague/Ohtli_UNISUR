@@ -1,4 +1,4 @@
-# Prototipo navegable OHTLI (v0.1)
+# Prototipo navegable OHTLI (v0.2)
 
 `index.html` es un archivo autocontenido: se abre directamente en el navegador, sin instalar nada. Solo carga las tipografías desde Google Fonts; sin conexión se muestran las tipografías del sistema.
 
@@ -22,6 +22,13 @@ Datos sintéticos del Anexo E de P2 V4 (semilla 20261118): 3 tutores, 120 tutora
 | COORD | Coordinación de tutoría |
 | ADMIN | Administrador |
 
+## Versiones
+
+| Versión | Archivo | Cambios |
+|---|---|---|
+| v0.1 | `versiones/OHTLI_prototipo_v0.1.html` (etiqueta `v0.1-pruebas`) | Versión entregada con P3 y probada en P4 |
+| v0.2 | `index.html` | INC-01: la observación es obligatoria en cada cambio de estado (RF-06, CP-06). INC-02: el informe del tutor lista cada sesión con su número de asistentes (RF-11, CP-04) |
+
 ## Pruebas
 
-Los escenarios ESC-01 a ESC-09 del Anexo E aparecen en la pantalla de inicio. Las pruebas de P4 (ESC-01 a ESC-08) se ejecutan manualmente en este prototipo, registrando el resultado esperado frente al observado. Cada pantalla muestra el requerimiento y el incremento al que pertenece (pantallas PT-01 a PT-17 en P3).
+Los escenarios ESC-01 a ESC-09 del Anexo E aparecen en la pantalla de inicio. El protocolo, el registro de ejecución, el script de pruebas automatizadas y las evidencias de P4 están en [`../pruebas`](../pruebas/README.md). Cada pantalla muestra el requerimiento y el incremento al que pertenece (pantallas PT-01 a PT-17 en P3).

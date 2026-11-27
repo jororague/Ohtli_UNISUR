@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OHTLI · Prototipo navegable</title>
+<title>OHTLI · Prototipo navegable v0.2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -164,6 +164,7 @@ const OHTLI = (function () {
     if (!t) return res(false, 'NO_PERMITIDA', `Transición no permitida: «${c.estado}» → «${destino}» para ${ROLES[u.rol].toLowerCase()} (RF-06, Tabla VI). No se registró ningún cambio.`);
     if (t.inc !== 'Mínimo') return res(false, 'INCREMENTO', `Transición especificada para el ${t.inc.toLowerCase()} incremento (RF-08); no está implementada en este prototipo.`);
     if (t.motivo && !(motivo || '').trim()) return res(false, 'MOTIVO', 'Para cerrar sin atención se requiere un motivo de cierre (RN-04).');
+    if (!(observacion || '').trim()) return res(false, 'OBSERVACION', 'No se registró el cambio: escriba una observación (RF-06: cada cambio guarda usuario, fecha y observación).');
     if ((observacion || '').length > 300) return res(false, 'VALIDACION', 'La observación admite hasta 300 caracteres.');
     // operación atómica: estado + CambioEstado + Bitácora
     const origen = c.estado;
@@ -201,7 +202,7 @@ const OHTLI = (function () {
     if (f.descripcion.length > 500) return res(false, 'VALIDACION', 'La descripción excede 500 caracteres (RNF-04).');
     const folio = siguienteFolio(st);
     st.canalizaciones.push({ folio, nc, tutor: u.id, instancia: f.instancia, prioridad: f.prioridad, fecha: FECHA_REF, estado: 'Registrada', motivo: f.motivo, informado: f.informado, descripcion: f.descripcion.trim(), fuente: 'Prueba' });
-    st.cambios.push({ id: st.cambios.length + 1, folio, origen: '—', destino: 'Registrada', usuario: u.id, fecha: ahora(), observacion: '', fuente: 'Prueba' });
+    st.cambios.push({ id: st.cambios.length + 1, folio, origen: '—', destino: 'Registrada', usuario: u.id, fecha: ahora(), observacion: 'Registro de la canalización', fuente: 'Prueba' });
     bit(st, u, 'Registro de canalización', 'Canalizacion', folio);
     return res(true, 'OK', `Canalización registrada con folio ${folio}, estado «Registrada».`, { folio });
   }
@@ -329,7 +330,7 @@ const OHTLI = (function () {
 </script>
 <script>{
 const O = OHTLI;
-const KEY = 'ohtli-prototipo-p3-v1';
+const KEY = 'ohtli-prototipo-p4-v02';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmt = f => { const [y, m, d] = String(f).slice(0, 10).split('-'); return `${d}/${m}/${y}`; };
 const stc = e => `<span class="st st-${esc(e.split(' ')[0])}">${esc(e)}</span>`;
@@ -361,7 +362,7 @@ function render() {
   if (!U) { app.innerHTML = login(); return; }
   const me = u(); const noLeidas = S.notificaciones.filter(n => n.para === me.id && !n.leida).length;
   app.innerHTML = `
-  <header class="strip"><b>OHTLI</b><span>Prototipo navegable</span>
+  <header class="strip"><b>OHTLI</b><span>Prototipo navegable v0.2</span>
     <span class="who">${esc(me.nombre)} · ${esc(O.ROLES[me.rol])}${me.instancia ? ' · ' + esc(me.instancia) : ''}</span>
     <button data-a="salir">Salir</button></header>
   <div class="note">Modelo navegable del diseño (P3), no el sistema construido. Datos sintéticos del Anexo E (semilla 20261118, prefijo SIN). Fecha simulada del sistema: ${fmt(O.FECHA_REF)}.</div>
@@ -374,7 +375,7 @@ function login() {
   const grupos = ['tutor', 'apoyo', 'jefatura', 'coord', 'admin'];
   return `<header class="strip"><b>OHTLI</b><span>Sistema Integral de Tutoría y Acompañamiento Estudiantil</span></header>
   <main class="login">
-    <h1>Prototipo navegable</h1>
+    <h1>Prototipo navegable v0.2</h1>
     <p>Seguimiento tutorial y canalización del Instituto Tecnológico Superior de Coatzacoalcos (ITESCO), como complemento de SIGEA. Este prototipo materializa los modelos de diseño de P3 (casos de uso, clases, máquina de estados, actividad y secuencia) para validar en P4 los escenarios ESC-01 a ESC-08.</p>
     <div class="zone mut">Datos sintéticos del Anexo E de P2 V4: 3 tutores, 120 tutorados, 27 sesiones, 15 canalizaciones y 42 cambios de estado. No corresponden a personas reales. Fecha simulada: ${fmt(O.FECHA_REF)}. Las cuentas no usan contraseña: el hash con sal y la expiración de sesión (RNF-01) pertenecen a la construcción; aquí la sesión se cierra tras 15 minutos sin actividad.</div>
     <h2 style="margin-top:22px">Elija una cuenta de prueba</h2>
@@ -506,7 +507,7 @@ function vFolio(me) {
   ${c.fuente === 'Anexo E' && det ? '<p class="mut">Motivo e informado no forman parte del Anexo E; la descripción es un marcador sintético.</p>' : ''}
   </section>
   <section class="panel"><h3>Acciones</h3>
-   ${disp.length ? `<label for="fobs">Observación (opcional, sin diagnósticos)</label><textarea id="fobs" maxlength="300"></textarea>
+   ${disp.length ? `<label for="fobs">Observación (obligatoria, sin diagnósticos)</label><textarea id="fobs" maxlength="300"></textarea>
      ${disp.some(t => t.motivo) ? '<label for="fmot">Motivo de cierre (RN-04)</label><input id="fmot">' : ''}
      <div class="row" style="margin-top:10px">${disp.map(t => `<button ${t.inc === 'Mínimo' ? 'class="pri"' : ''} data-tr="${esc(t.d)}">${esc(t.accion)}${t.inc !== 'Mínimo' ? ' (2.º incremento)' : ''}</button>`).join('')}</div>`
      : '<p class="mut">Su rol no tiene transiciones disponibles desde este estado.</p>'}
@@ -538,6 +539,9 @@ function vInforme(me) {
    <h3 style="margin-top:16px">Canalizaciones por estado al corte</h3>
    ${pe.length ? `<table><tbody>${pe.sort().map(([k, v]) => `<tr><td>${stc(k)}</td><td class="n">${v}</td></tr>`).join('')}</tbody></table>` : '<p class="mut">Ninguna.</p>'}
    <p class="mut">Alertas vigentes al corte (RF-10, 2.º incremento): ${r.alertas}</p>
+   <h3 style="margin-top:16px">Sesiones del periodo (${r.sesiones.length}; ${r.asistencias} asistencias)</h3>
+   <table class="stack"><thead><tr><th>Fecha</th><th>Tipo</th><th>Tema</th><th class="n">Asistentes</th></tr></thead><tbody>
+   ${r.sesiones.slice().sort((a, b) => a.fecha < b.fecha ? -1 : 1).map(s => `<tr><td>${fmt(s.fecha)}</td><td>${esc(s.tipo)}</td><td>${esc(s.tema)}</td><td class="n">${esc(s.asistentes)}</td></tr>`).join('')}</tbody></table>
   </section>
   <p class="mut noprint">La exportación a PDF (RF-11) corresponde al sistema construido: el visor de este prototipo no permite imprimir ni descargar. Use «Copiar informe» para llevar el texto a otro documento.</p>
   <button class="noprint" data-a="copiar">Copiar informe</button>`;
